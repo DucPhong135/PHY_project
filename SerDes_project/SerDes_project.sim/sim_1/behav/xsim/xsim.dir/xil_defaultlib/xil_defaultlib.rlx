@@ -1,0 +1,9 @@
+0.7
+2020.2
+Oct 13 2023
+20:47:58
+D:/Verilog_project/SerDes/Descrambler.sv,1758384024,systemVerilog,,D:/Verilog_project/SerDes/Parallel_LFSR.sv,,pcie_descrambler_128b,,uvm,,,,,,
+D:/Verilog_project/SerDes/Parallel_LFSR.sv,1758380448,systemVerilog,,D:/Verilog_project/SerDes/Scrambler.sv,,Parallel_LFSR,,uvm,,,,,,
+D:/Verilog_project/SerDes/Scrambler.sv,1758383851,systemVerilog,,D:/Verilog_project/SerDes/tb_scrambler_descrambler.sv,,pcie_scrambler_128b,,uvm,,,,,,
+D:/Verilog_project/SerDes/SerDes_project/SerDes_project.sim/sim_1/behav/xsim/glbl.v,1697210495,verilog,,,,glbl,,uvm,,,,,,
+D:/Verilog_project/SerDes/tb_scrambler_descrambler.sv,1758422584,systemVerilog,,,,tb_scrambler_descrambler,,uvm,,,,,,

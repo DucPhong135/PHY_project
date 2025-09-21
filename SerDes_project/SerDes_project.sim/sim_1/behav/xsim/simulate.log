@@ -1,0 +1,615 @@
+Time resolution is 1 ps
+=== Starting Scrambler/Descrambler Test ===
+Time: 145000
+
+--- Test 1: Basic Functionality ---
+DEBUG: Scrambled data: fedcba98765432100123456789abcdef (Control: 0)
+DEBUG: Scrambled data: 00000000000000000000000000000000 (Control: 0)
+DEBUG: Scrambled data: ffffffffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 0123456789abcdeffedcba9876543210, Descrambled: 0123456789abcdeffedcba9876543210
+DEBUG: Scrambled data: 55555555555555555555555555555555 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffffffffffffffff, Descrambled: ffffffffffffffffffffffffffffffff
+PASS: Data block - Original: 00000000000000000000000000000000, Descrambled: 00000000000000000000000000000000
+PASS: Data block - Original: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, Descrambled: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+--- Test 2: Control Block Bypass ---
+DEBUG: Scrambled data: 1234567890abcdef1234567890abcdef (Control: 1)
+DEBUG: Scrambled data: deadbeefcafebabedeadbeefcafebabe (Control: 1)
+PASS: Control block bypass - Original: 1234567890abcdef1234567890abcdef, Descrambled: 1234567890abcdef1234567890abcdef
+PASS: Control block bypass - Original: deadbeefcafebabedeadbeefcafebabe, Descrambled: deadbeefcafebabedeadbeefcafebabe
+
+--- Test 3: Random Data Test ---
+DEBUG: Scrambled data: 4e0fa99c7b7b29f63f76a17eedeacadb (Control: 0)
+DEBUG: Scrambled data: 76c8aded4d3d7b9ab9206672f94684f2 (Control: 0)
+DEBUG: Scrambled data: e17232c2c4dc0e89f92832f2ff0c1cfe (Control: 0)
+PASS: Data block - Original: b1f056638484d609c0895e8112153524, Descrambled: b1f056638484d609c0895e8112153524
+DEBUG: Scrambled data: 1cc8db3983021606b9d20873892ba812 (Control: 0)
+PASS: Data block - Original: 89375212b2c2846546df998d06b97b0d, Descrambled: 89375212b2c2846546df998d06b97b0d
+DEBUG: Scrambled data: 442d8d888d50081a2aec2d551d087b3a (Control: 0)
+PASS: Data block - Original: 1e8dcd3d3b23f17606d7cd0d00f3e301, Descrambled: 1e8dcd3d3b23f17606d7cd0d00f3e301
+DEBUG: Scrambled data: 1889693186cf960db813247076cd29ed (Control: 0)
+PASS: Data block - Original: e33724c67cfde9f9462df78c76d457ed, Descrambled: e33724c67cfde9f9462df78c76d457ed
+DEBUG: Scrambled data: 2171d742d1a7b6a31d35b13a0bff8517 (Control: 0)
+PASS: Data block - Original: bbd2727772aff7e5d513d2aae2f784c5, Descrambled: bbd2727772aff7e5d513d2aae2f784c5
+DEBUG: Scrambled data: fa8c78f54e109d9c4d58d99a6954a7d2 (Control: 0)
+PASS: Data block - Original: e77696ce793069f247ecdb8f8932d612, Descrambled: e77696ce793069f247ecdb8f8932d612
+DEBUG: Scrambled data: 31333362aa87ba55ef9bdedf3fc4dd7f (Control: 0)
+PASS: Data block - Original: de8e28bd2e58495ce2ca4ec5f4007ae8, Descrambled: de8e28bd2e58495ce2ca4ec5f4007ae8
+DEBUG: Scrambled data: 565829ac7943c7f2767c47ec34dfc169 (Control: 0)
+PASS: Data block - Original: 0573870ab1ef6263b2a7266596ab582d, Descrambled: 0573870ab1ef6263b2a7266596ab582d
+DEBUG: Scrambled data: 28a9c1517ee8b5fd1559d52aca602294 (Control: 0)
+PASS: Data block - Original: cecccc9d557845aa10642120c03b2280, Descrambled: cecccc9d557845aa10642120c03b2280
+DEBUG: Scrambled data: faf69af5ee7bb6dc183a8d30f10016e2 (Control: 0)
+PASS: Data block - Original: a9a7d65386bc380d8983b813cb203e96, Descrambled: a9a7d65386bc380d8983b813cb203e96
+DEBUG: Scrambled data: bad19e758697420d61ceb3c31a8cf535 (Control: 0)
+PASS: Data block - Original: d7563eae81174a02eaa62ad5359fdd6b, Descrambled: d7563eae81174a02eaa62ad5359fdd6b
+DEBUG: Scrambled data: 3b75ed76c3df0c8713b4cb27df3b4cbe (Control: 0)
+PASS: Data block - Original: 0509650a11844923e7c572cf0effe91d, Descrambled: 0509650a11844923e7c572cf0effe91d
+DEBUG: Scrambled data: a8eaec519cb40639a4fd9a498a3af214 (Control: 0)
+PASS: Data block - Original: 452e618a7968bdf29e314c3ce5730aca, Descrambled: 452e618a7968bdf29e314c3ce5730aca
+DEBUG: Scrambled data: 4768418e7a2865f4eaf022d5218afd43 (Control: 0)
+PASS: Data block - Original: c48a12893c20f378ec4b34d820c4b341, Descrambled: c48a12893c20f378ec4b34d820c4b341
+DEBUG: Scrambled data: e2f9ccc562339fc4d80daab0bd0dbe7a (Control: 0)
+PASS: Data block - Original: 571513ae634bf9c65b0265b675c50deb, Descrambled: 571513ae634bf9c65b0265b675c50deb
+DEBUG: Scrambled data: 9363b4268726640ef555b4ea40dccd81 (Control: 0)
+PASS: Data block - Original: b897be7185d79a0b150fdd2ade7502bc, Descrambled: b897be7185d79a0b150fdd2ade7502bc
+DEBUG: Scrambled data: b8465e70b05eaa60d9ca04b3cedcf89d (Control: 0)
+PASS: Data block - Original: 1d06333a9dcc603b27f2554f42f24185, Descrambled: 1d06333a9dcc603b27f2554f42f24185
+DEBUG: Scrambled data: 51826ba3303ba96024329f4883925607 (Control: 0)
+PASS: Data block - Original: 6c9c4bd978d99bf10aaa4b15bf23327e, Descrambled: 6c9c4bd978d99bf10aaa4b15bf23327e
+PASS: Data block - Original: 47b9a18f4fa1559f2635fb4c31230762, Descrambled: 47b9a18f4fa1559f2635fb4c31230762
+PASS: Data block - Original: ae7d945ccfc4569fdbcd60b77c6da9f8, Descrambled: ae7d945ccfc4569fdbcd60b77c6da9f8
+
+--- Test 4: Pattern Data Test ---
+DEBUG: Scrambled data: fffffffffffffffffffffffffffffffe (Control: 0)
+DEBUG: Scrambled data: fffffffffffffffffffffffffffffffd (Control: 0)
+DEBUG: Scrambled data: fffffffffffffffffffffffffffffffb (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000000001, Descrambled: 00000000000000000000000000000001
+DEBUG: Scrambled data: fffffffffffffffffffffffffffffff7 (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000000002, Descrambled: 00000000000000000000000000000002
+DEBUG: Scrambled data: ffffffffffffffffffffffffffffffef (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000000004, Descrambled: 00000000000000000000000000000004
+DEBUG: Scrambled data: ffffffffffffffffffffffffffffffdf (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000000008, Descrambled: 00000000000000000000000000000008
+DEBUG: Scrambled data: ffffffffffffffffffffffffffffffbf (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000000010, Descrambled: 00000000000000000000000000000010
+DEBUG: Scrambled data: ffffffffffffffffffffffffffffff7f (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000000020, Descrambled: 00000000000000000000000000000020
+DEBUG: Scrambled data: fffffffffffffffffffffffffffffeff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000000040, Descrambled: 00000000000000000000000000000040
+DEBUG: Scrambled data: fffffffffffffffffffffffffffffdff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000000080, Descrambled: 00000000000000000000000000000080
+DEBUG: Scrambled data: fffffffffffffffffffffffffffffbff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000000100, Descrambled: 00000000000000000000000000000100
+DEBUG: Scrambled data: fffffffffffffffffffffffffffff7ff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000000200, Descrambled: 00000000000000000000000000000200
+DEBUG: Scrambled data: ffffffffffffffffffffffffffffefff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000000400, Descrambled: 00000000000000000000000000000400
+DEBUG: Scrambled data: ffffffffffffffffffffffffffffdfff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000000800, Descrambled: 00000000000000000000000000000800
+DEBUG: Scrambled data: ffffffffffffffffffffffffffffbfff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000001000, Descrambled: 00000000000000000000000000001000
+DEBUG: Scrambled data: ffffffffffffffffffffffffffff7fff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000002000, Descrambled: 00000000000000000000000000002000
+DEBUG: Scrambled data: fffffffffffffffffffffffffffeffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000004000, Descrambled: 00000000000000000000000000004000
+DEBUG: Scrambled data: fffffffffffffffffffffffffffdffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000008000, Descrambled: 00000000000000000000000000008000
+DEBUG: Scrambled data: fffffffffffffffffffffffffffbffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000010000, Descrambled: 00000000000000000000000000010000
+DEBUG: Scrambled data: fffffffffffffffffffffffffff7ffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000020000, Descrambled: 00000000000000000000000000020000
+DEBUG: Scrambled data: ffffffffffffffffffffffffffefffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000040000, Descrambled: 00000000000000000000000000040000
+DEBUG: Scrambled data: ffffffffffffffffffffffffffdfffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000080000, Descrambled: 00000000000000000000000000080000
+DEBUG: Scrambled data: ffffffffffffffffffffffffffbfffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000100000, Descrambled: 00000000000000000000000000100000
+DEBUG: Scrambled data: ffffffffffffffffffffffffff7fffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000200000, Descrambled: 00000000000000000000000000200000
+DEBUG: Scrambled data: fffffffffffffffffffffffffeffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000400000, Descrambled: 00000000000000000000000000400000
+DEBUG: Scrambled data: fffffffffffffffffffffffffdffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000800000, Descrambled: 00000000000000000000000000800000
+DEBUG: Scrambled data: fffffffffffffffffffffffffbffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000001000000, Descrambled: 00000000000000000000000001000000
+DEBUG: Scrambled data: fffffffffffffffffffffffff7ffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000002000000, Descrambled: 00000000000000000000000002000000
+DEBUG: Scrambled data: ffffffffffffffffffffffffefffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000004000000, Descrambled: 00000000000000000000000004000000
+DEBUG: Scrambled data: ffffffffffffffffffffffffdfffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000008000000, Descrambled: 00000000000000000000000008000000
+DEBUG: Scrambled data: ffffffffffffffffffffffffbfffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000010000000, Descrambled: 00000000000000000000000010000000
+DEBUG: Scrambled data: ffffffffffffffffffffffff7fffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000020000000, Descrambled: 00000000000000000000000020000000
+DEBUG: Scrambled data: fffffffffffffffffffffffeffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000040000000, Descrambled: 00000000000000000000000040000000
+DEBUG: Scrambled data: fffffffffffffffffffffffdffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000080000000, Descrambled: 00000000000000000000000080000000
+DEBUG: Scrambled data: fffffffffffffffffffffffbffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000100000000, Descrambled: 00000000000000000000000100000000
+DEBUG: Scrambled data: fffffffffffffffffffffff7ffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000200000000, Descrambled: 00000000000000000000000200000000
+DEBUG: Scrambled data: ffffffffffffffffffffffefffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000400000000, Descrambled: 00000000000000000000000400000000
+DEBUG: Scrambled data: ffffffffffffffffffffffdfffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000000800000000, Descrambled: 00000000000000000000000800000000
+DEBUG: Scrambled data: ffffffffffffffffffffffbfffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000001000000000, Descrambled: 00000000000000000000001000000000
+DEBUG: Scrambled data: ffffffffffffffffffffff7fffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000002000000000, Descrambled: 00000000000000000000002000000000
+DEBUG: Scrambled data: fffffffffffffffffffffeffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000004000000000, Descrambled: 00000000000000000000004000000000
+DEBUG: Scrambled data: fffffffffffffffffffffdffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000008000000000, Descrambled: 00000000000000000000008000000000
+DEBUG: Scrambled data: fffffffffffffffffffffbffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000010000000000, Descrambled: 00000000000000000000010000000000
+DEBUG: Scrambled data: fffffffffffffffffffff7ffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000020000000000, Descrambled: 00000000000000000000020000000000
+DEBUG: Scrambled data: ffffffffffffffffffffefffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000040000000000, Descrambled: 00000000000000000000040000000000
+DEBUG: Scrambled data: ffffffffffffffffffffdfffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000080000000000, Descrambled: 00000000000000000000080000000000
+DEBUG: Scrambled data: ffffffffffffffffffffbfffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000100000000000, Descrambled: 00000000000000000000100000000000
+DEBUG: Scrambled data: ffffffffffffffffffff7fffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000200000000000, Descrambled: 00000000000000000000200000000000
+DEBUG: Scrambled data: fffffffffffffffffffeffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000400000000000, Descrambled: 00000000000000000000400000000000
+DEBUG: Scrambled data: fffffffffffffffffffdffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000000800000000000, Descrambled: 00000000000000000000800000000000
+DEBUG: Scrambled data: fffffffffffffffffffbffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000001000000000000, Descrambled: 00000000000000000001000000000000
+DEBUG: Scrambled data: fffffffffffffffffff7ffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000002000000000000, Descrambled: 00000000000000000002000000000000
+DEBUG: Scrambled data: ffffffffffffffffffefffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000004000000000000, Descrambled: 00000000000000000004000000000000
+DEBUG: Scrambled data: ffffffffffffffffffdfffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000008000000000000, Descrambled: 00000000000000000008000000000000
+DEBUG: Scrambled data: ffffffffffffffffffbfffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000010000000000000, Descrambled: 00000000000000000010000000000000
+DEBUG: Scrambled data: ffffffffffffffffff7fffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000020000000000000, Descrambled: 00000000000000000020000000000000
+DEBUG: Scrambled data: fffffffffffffffffeffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000040000000000000, Descrambled: 00000000000000000040000000000000
+DEBUG: Scrambled data: fffffffffffffffffdffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000080000000000000, Descrambled: 00000000000000000080000000000000
+DEBUG: Scrambled data: fffffffffffffffffbffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000100000000000000, Descrambled: 00000000000000000100000000000000
+DEBUG: Scrambled data: fffffffffffffffff7ffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000200000000000000, Descrambled: 00000000000000000200000000000000
+DEBUG: Scrambled data: ffffffffffffffffefffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000400000000000000, Descrambled: 00000000000000000400000000000000
+DEBUG: Scrambled data: ffffffffffffffffdfffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000000800000000000000, Descrambled: 00000000000000000800000000000000
+DEBUG: Scrambled data: ffffffffffffffffbfffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000001000000000000000, Descrambled: 00000000000000001000000000000000
+DEBUG: Scrambled data: ffffffffffffffff7fffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000002000000000000000, Descrambled: 00000000000000002000000000000000
+DEBUG: Scrambled data: fffffffffffffffeffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000004000000000000000, Descrambled: 00000000000000004000000000000000
+DEBUG: Scrambled data: fffffffffffffffdffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000008000000000000000, Descrambled: 00000000000000008000000000000000
+DEBUG: Scrambled data: fffffffffffffffbffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000010000000000000000, Descrambled: 00000000000000010000000000000000
+DEBUG: Scrambled data: fffffffffffffff7ffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000020000000000000000, Descrambled: 00000000000000020000000000000000
+DEBUG: Scrambled data: ffffffffffffffefffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000040000000000000000, Descrambled: 00000000000000040000000000000000
+DEBUG: Scrambled data: ffffffffffffffdfffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000080000000000000000, Descrambled: 00000000000000080000000000000000
+DEBUG: Scrambled data: ffffffffffffffbfffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000100000000000000000, Descrambled: 00000000000000100000000000000000
+DEBUG: Scrambled data: ffffffffffffff7fffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000200000000000000000, Descrambled: 00000000000000200000000000000000
+DEBUG: Scrambled data: fffffffffffffeffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000400000000000000000, Descrambled: 00000000000000400000000000000000
+DEBUG: Scrambled data: fffffffffffffdffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000000800000000000000000, Descrambled: 00000000000000800000000000000000
+DEBUG: Scrambled data: fffffffffffffbffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000001000000000000000000, Descrambled: 00000000000001000000000000000000
+DEBUG: Scrambled data: fffffffffffff7ffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000002000000000000000000, Descrambled: 00000000000002000000000000000000
+DEBUG: Scrambled data: ffffffffffffefffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000004000000000000000000, Descrambled: 00000000000004000000000000000000
+DEBUG: Scrambled data: ffffffffffffdfffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000008000000000000000000, Descrambled: 00000000000008000000000000000000
+DEBUG: Scrambled data: ffffffffffffbfffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000010000000000000000000, Descrambled: 00000000000010000000000000000000
+DEBUG: Scrambled data: ffffffffffff7fffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000020000000000000000000, Descrambled: 00000000000020000000000000000000
+DEBUG: Scrambled data: fffffffffffeffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000040000000000000000000, Descrambled: 00000000000040000000000000000000
+DEBUG: Scrambled data: fffffffffffdffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000080000000000000000000, Descrambled: 00000000000080000000000000000000
+DEBUG: Scrambled data: fffffffffffbffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000100000000000000000000, Descrambled: 00000000000100000000000000000000
+DEBUG: Scrambled data: fffffffffff7ffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000200000000000000000000, Descrambled: 00000000000200000000000000000000
+DEBUG: Scrambled data: ffffffffffefffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000400000000000000000000, Descrambled: 00000000000400000000000000000000
+DEBUG: Scrambled data: ffffffffffdfffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000000800000000000000000000, Descrambled: 00000000000800000000000000000000
+DEBUG: Scrambled data: ffffffffffbfffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000001000000000000000000000, Descrambled: 00000000001000000000000000000000
+DEBUG: Scrambled data: ffffffffff7fffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000002000000000000000000000, Descrambled: 00000000002000000000000000000000
+DEBUG: Scrambled data: fffffffffeffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000004000000000000000000000, Descrambled: 00000000004000000000000000000000
+DEBUG: Scrambled data: fffffffffdffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000008000000000000000000000, Descrambled: 00000000008000000000000000000000
+DEBUG: Scrambled data: fffffffffbffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000010000000000000000000000, Descrambled: 00000000010000000000000000000000
+DEBUG: Scrambled data: fffffffff7ffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000020000000000000000000000, Descrambled: 00000000020000000000000000000000
+DEBUG: Scrambled data: ffffffffefffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000040000000000000000000000, Descrambled: 00000000040000000000000000000000
+DEBUG: Scrambled data: ffffffffdfffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000080000000000000000000000, Descrambled: 00000000080000000000000000000000
+DEBUG: Scrambled data: ffffffffbfffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000100000000000000000000000, Descrambled: 00000000100000000000000000000000
+DEBUG: Scrambled data: ffffffff7fffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000200000000000000000000000, Descrambled: 00000000200000000000000000000000
+DEBUG: Scrambled data: fffffffeffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000400000000000000000000000, Descrambled: 00000000400000000000000000000000
+DEBUG: Scrambled data: fffffffdffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000000800000000000000000000000, Descrambled: 00000000800000000000000000000000
+DEBUG: Scrambled data: fffffffbffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000001000000000000000000000000, Descrambled: 00000001000000000000000000000000
+DEBUG: Scrambled data: fffffff7ffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000002000000000000000000000000, Descrambled: 00000002000000000000000000000000
+DEBUG: Scrambled data: ffffffefffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000004000000000000000000000000, Descrambled: 00000004000000000000000000000000
+DEBUG: Scrambled data: ffffffdfffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000008000000000000000000000000, Descrambled: 00000008000000000000000000000000
+DEBUG: Scrambled data: ffffffbfffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000010000000000000000000000000, Descrambled: 00000010000000000000000000000000
+DEBUG: Scrambled data: ffffff7fffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000020000000000000000000000000, Descrambled: 00000020000000000000000000000000
+DEBUG: Scrambled data: fffffeffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000040000000000000000000000000, Descrambled: 00000040000000000000000000000000
+DEBUG: Scrambled data: fffffdffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000080000000000000000000000000, Descrambled: 00000080000000000000000000000000
+DEBUG: Scrambled data: fffffbffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000100000000000000000000000000, Descrambled: 00000100000000000000000000000000
+DEBUG: Scrambled data: fffff7ffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000200000000000000000000000000, Descrambled: 00000200000000000000000000000000
+DEBUG: Scrambled data: ffffefffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000400000000000000000000000000, Descrambled: 00000400000000000000000000000000
+DEBUG: Scrambled data: ffffdfffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00000800000000000000000000000000, Descrambled: 00000800000000000000000000000000
+DEBUG: Scrambled data: ffffbfffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00001000000000000000000000000000, Descrambled: 00001000000000000000000000000000
+DEBUG: Scrambled data: ffff7fffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00002000000000000000000000000000, Descrambled: 00002000000000000000000000000000
+DEBUG: Scrambled data: fffeffffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00004000000000000000000000000000, Descrambled: 00004000000000000000000000000000
+DEBUG: Scrambled data: fffdffffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00008000000000000000000000000000, Descrambled: 00008000000000000000000000000000
+DEBUG: Scrambled data: fffbffffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00010000000000000000000000000000, Descrambled: 00010000000000000000000000000000
+DEBUG: Scrambled data: fff7ffffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00020000000000000000000000000000, Descrambled: 00020000000000000000000000000000
+DEBUG: Scrambled data: ffefffffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00040000000000000000000000000000, Descrambled: 00040000000000000000000000000000
+DEBUG: Scrambled data: ffdfffffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00080000000000000000000000000000, Descrambled: 00080000000000000000000000000000
+DEBUG: Scrambled data: ffbfffffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00100000000000000000000000000000, Descrambled: 00100000000000000000000000000000
+DEBUG: Scrambled data: ff7fffffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00200000000000000000000000000000, Descrambled: 00200000000000000000000000000000
+DEBUG: Scrambled data: feffffffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00400000000000000000000000000000, Descrambled: 00400000000000000000000000000000
+DEBUG: Scrambled data: fdffffffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 00800000000000000000000000000000, Descrambled: 00800000000000000000000000000000
+DEBUG: Scrambled data: fbffffffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 01000000000000000000000000000000, Descrambled: 01000000000000000000000000000000
+DEBUG: Scrambled data: f7ffffffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 02000000000000000000000000000000, Descrambled: 02000000000000000000000000000000
+DEBUG: Scrambled data: efffffffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 04000000000000000000000000000000, Descrambled: 04000000000000000000000000000000
+DEBUG: Scrambled data: dfffffffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 08000000000000000000000000000000, Descrambled: 08000000000000000000000000000000
+DEBUG: Scrambled data: bfffffffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 10000000000000000000000000000000, Descrambled: 10000000000000000000000000000000
+DEBUG: Scrambled data: 7fffffffffffffffffffffffffffffff (Control: 0)
+PASS: Data block - Original: 20000000000000000000000000000000, Descrambled: 20000000000000000000000000000000
+DEBUG: Scrambled data: 00000000000000000000000000000001 (Control: 0)
+PASS: Data block - Original: 40000000000000000000000000000000, Descrambled: 40000000000000000000000000000000
+DEBUG: Scrambled data: 00000000000000000000000000000002 (Control: 0)
+PASS: Data block - Original: 80000000000000000000000000000000, Descrambled: 80000000000000000000000000000000
+DEBUG: Scrambled data: 00000000000000000000000000000004 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffffffffffffffe, Descrambled: fffffffffffffffffffffffffffffffe
+DEBUG: Scrambled data: 00000000000000000000000000000008 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffffffffffffffd, Descrambled: fffffffffffffffffffffffffffffffd
+DEBUG: Scrambled data: 00000000000000000000000000000010 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffffffffffffffb, Descrambled: fffffffffffffffffffffffffffffffb
+DEBUG: Scrambled data: 00000000000000000000000000000020 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffffffffffffff7, Descrambled: fffffffffffffffffffffffffffffff7
+DEBUG: Scrambled data: 00000000000000000000000000000040 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffffffffffffffef, Descrambled: ffffffffffffffffffffffffffffffef
+DEBUG: Scrambled data: 00000000000000000000000000000080 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffffffffffffffdf, Descrambled: ffffffffffffffffffffffffffffffdf
+DEBUG: Scrambled data: 00000000000000000000000000000100 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffffffffffffffbf, Descrambled: ffffffffffffffffffffffffffffffbf
+DEBUG: Scrambled data: 00000000000000000000000000000200 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffffffffffffff7f, Descrambled: ffffffffffffffffffffffffffffff7f
+DEBUG: Scrambled data: 00000000000000000000000000000400 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffffffffffffeff, Descrambled: fffffffffffffffffffffffffffffeff
+DEBUG: Scrambled data: 00000000000000000000000000000800 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffffffffffffdff, Descrambled: fffffffffffffffffffffffffffffdff
+DEBUG: Scrambled data: 00000000000000000000000000001000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffffffffffffbff, Descrambled: fffffffffffffffffffffffffffffbff
+DEBUG: Scrambled data: 00000000000000000000000000002000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffffffffffff7ff, Descrambled: fffffffffffffffffffffffffffff7ff
+DEBUG: Scrambled data: 00000000000000000000000000004000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffffffffffffefff, Descrambled: ffffffffffffffffffffffffffffefff
+DEBUG: Scrambled data: 00000000000000000000000000008000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffffffffffffdfff, Descrambled: ffffffffffffffffffffffffffffdfff
+DEBUG: Scrambled data: 00000000000000000000000000010000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffffffffffffbfff, Descrambled: ffffffffffffffffffffffffffffbfff
+DEBUG: Scrambled data: 00000000000000000000000000020000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffffffffffff7fff, Descrambled: ffffffffffffffffffffffffffff7fff
+DEBUG: Scrambled data: 00000000000000000000000000040000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffffffffffeffff, Descrambled: fffffffffffffffffffffffffffeffff
+DEBUG: Scrambled data: 00000000000000000000000000080000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffffffffffdffff, Descrambled: fffffffffffffffffffffffffffdffff
+DEBUG: Scrambled data: 00000000000000000000000000100000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffffffffffbffff, Descrambled: fffffffffffffffffffffffffffbffff
+DEBUG: Scrambled data: 00000000000000000000000000200000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffffffffff7ffff, Descrambled: fffffffffffffffffffffffffff7ffff
+DEBUG: Scrambled data: 00000000000000000000000000400000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffffffffffefffff, Descrambled: ffffffffffffffffffffffffffefffff
+DEBUG: Scrambled data: 00000000000000000000000000800000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffffffffffdfffff, Descrambled: ffffffffffffffffffffffffffdfffff
+DEBUG: Scrambled data: 00000000000000000000000001000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffffffffffbfffff, Descrambled: ffffffffffffffffffffffffffbfffff
+DEBUG: Scrambled data: 00000000000000000000000002000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffffffffff7fffff, Descrambled: ffffffffffffffffffffffffff7fffff
+DEBUG: Scrambled data: 00000000000000000000000004000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffffffffeffffff, Descrambled: fffffffffffffffffffffffffeffffff
+DEBUG: Scrambled data: 00000000000000000000000008000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffffffffdffffff, Descrambled: fffffffffffffffffffffffffdffffff
+DEBUG: Scrambled data: 00000000000000000000000010000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffffffffbffffff, Descrambled: fffffffffffffffffffffffffbffffff
+DEBUG: Scrambled data: 00000000000000000000000020000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffffffff7ffffff, Descrambled: fffffffffffffffffffffffff7ffffff
+DEBUG: Scrambled data: 00000000000000000000000040000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffffffffefffffff, Descrambled: ffffffffffffffffffffffffefffffff
+DEBUG: Scrambled data: 00000000000000000000000080000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffffffffdfffffff, Descrambled: ffffffffffffffffffffffffdfffffff
+DEBUG: Scrambled data: 00000000000000000000000100000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffffffffbfffffff, Descrambled: ffffffffffffffffffffffffbfffffff
+DEBUG: Scrambled data: 00000000000000000000000200000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffffffff7fffffff, Descrambled: ffffffffffffffffffffffff7fffffff
+DEBUG: Scrambled data: 00000000000000000000000400000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffffffeffffffff, Descrambled: fffffffffffffffffffffffeffffffff
+DEBUG: Scrambled data: 00000000000000000000000800000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffffffdffffffff, Descrambled: fffffffffffffffffffffffdffffffff
+DEBUG: Scrambled data: 00000000000000000000001000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffffffbffffffff, Descrambled: fffffffffffffffffffffffbffffffff
+DEBUG: Scrambled data: 00000000000000000000002000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffffff7ffffffff, Descrambled: fffffffffffffffffffffff7ffffffff
+DEBUG: Scrambled data: 00000000000000000000004000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffffffefffffffff, Descrambled: ffffffffffffffffffffffefffffffff
+DEBUG: Scrambled data: 00000000000000000000008000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffffffdfffffffff, Descrambled: ffffffffffffffffffffffdfffffffff
+DEBUG: Scrambled data: 00000000000000000000010000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffffffbfffffffff, Descrambled: ffffffffffffffffffffffbfffffffff
+DEBUG: Scrambled data: 00000000000000000000020000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffffff7fffffffff, Descrambled: ffffffffffffffffffffff7fffffffff
+DEBUG: Scrambled data: 00000000000000000000040000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffffeffffffffff, Descrambled: fffffffffffffffffffffeffffffffff
+DEBUG: Scrambled data: 00000000000000000000080000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffffdffffffffff, Descrambled: fffffffffffffffffffffdffffffffff
+DEBUG: Scrambled data: 00000000000000000000100000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffffbffffffffff, Descrambled: fffffffffffffffffffffbffffffffff
+DEBUG: Scrambled data: 00000000000000000000200000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffff7ffffffffff, Descrambled: fffffffffffffffffffff7ffffffffff
+DEBUG: Scrambled data: 00000000000000000000400000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffffefffffffffff, Descrambled: ffffffffffffffffffffefffffffffff
+DEBUG: Scrambled data: 00000000000000000000800000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffffdfffffffffff, Descrambled: ffffffffffffffffffffdfffffffffff
+DEBUG: Scrambled data: 00000000000000000001000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffffbfffffffffff, Descrambled: ffffffffffffffffffffbfffffffffff
+DEBUG: Scrambled data: 00000000000000000002000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffff7fffffffffff, Descrambled: ffffffffffffffffffff7fffffffffff
+DEBUG: Scrambled data: 00000000000000000004000000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffeffffffffffff, Descrambled: fffffffffffffffffffeffffffffffff
+DEBUG: Scrambled data: 00000000000000000008000000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffdffffffffffff, Descrambled: fffffffffffffffffffdffffffffffff
+DEBUG: Scrambled data: 00000000000000000010000000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffffbffffffffffff, Descrambled: fffffffffffffffffffbffffffffffff
+DEBUG: Scrambled data: 00000000000000000020000000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffff7ffffffffffff, Descrambled: fffffffffffffffffff7ffffffffffff
+DEBUG: Scrambled data: 00000000000000000040000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffefffffffffffff, Descrambled: ffffffffffffffffffefffffffffffff
+DEBUG: Scrambled data: 00000000000000000080000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffdfffffffffffff, Descrambled: ffffffffffffffffffdfffffffffffff
+DEBUG: Scrambled data: 00000000000000000100000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffffbfffffffffffff, Descrambled: ffffffffffffffffffbfffffffffffff
+DEBUG: Scrambled data: 00000000000000000200000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffff7fffffffffffff, Descrambled: ffffffffffffffffff7fffffffffffff
+DEBUG: Scrambled data: 00000000000000000400000000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffeffffffffffffff, Descrambled: fffffffffffffffffeffffffffffffff
+DEBUG: Scrambled data: 00000000000000000800000000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffdffffffffffffff, Descrambled: fffffffffffffffffdffffffffffffff
+DEBUG: Scrambled data: 00000000000000001000000000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffffbffffffffffffff, Descrambled: fffffffffffffffffbffffffffffffff
+DEBUG: Scrambled data: 00000000000000002000000000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffff7ffffffffffffff, Descrambled: fffffffffffffffff7ffffffffffffff
+DEBUG: Scrambled data: 00000000000000004000000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffefffffffffffffff, Descrambled: ffffffffffffffffefffffffffffffff
+DEBUG: Scrambled data: 00000000000000008000000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffdfffffffffffffff, Descrambled: ffffffffffffffffdfffffffffffffff
+DEBUG: Scrambled data: 00000000000000010000000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffffbfffffffffffffff, Descrambled: ffffffffffffffffbfffffffffffffff
+DEBUG: Scrambled data: 00000000000000020000000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffff7fffffffffffffff, Descrambled: ffffffffffffffff7fffffffffffffff
+DEBUG: Scrambled data: 00000000000000040000000000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffeffffffffffffffff, Descrambled: fffffffffffffffeffffffffffffffff
+DEBUG: Scrambled data: 00000000000000080000000000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffdffffffffffffffff, Descrambled: fffffffffffffffdffffffffffffffff
+DEBUG: Scrambled data: 00000000000000100000000000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffffbffffffffffffffff, Descrambled: fffffffffffffffbffffffffffffffff
+DEBUG: Scrambled data: 00000000000000200000000000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffff7ffffffffffffffff, Descrambled: fffffffffffffff7ffffffffffffffff
+DEBUG: Scrambled data: 00000000000000400000000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffefffffffffffffffff, Descrambled: ffffffffffffffefffffffffffffffff
+DEBUG: Scrambled data: 00000000000000800000000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffdfffffffffffffffff, Descrambled: ffffffffffffffdfffffffffffffffff
+DEBUG: Scrambled data: 00000000000001000000000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffffbfffffffffffffffff, Descrambled: ffffffffffffffbfffffffffffffffff
+DEBUG: Scrambled data: 00000000000002000000000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffff7fffffffffffffffff, Descrambled: ffffffffffffff7fffffffffffffffff
+DEBUG: Scrambled data: 00000000000004000000000000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffeffffffffffffffffff, Descrambled: fffffffffffffeffffffffffffffffff
+DEBUG: Scrambled data: 00000000000008000000000000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffdffffffffffffffffff, Descrambled: fffffffffffffdffffffffffffffffff
+DEBUG: Scrambled data: 00000000000010000000000000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffffbffffffffffffffffff, Descrambled: fffffffffffffbffffffffffffffffff
+DEBUG: Scrambled data: 00000000000020000000000000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffff7ffffffffffffffffff, Descrambled: fffffffffffff7ffffffffffffffffff
+DEBUG: Scrambled data: 00000000000040000000000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffefffffffffffffffffff, Descrambled: ffffffffffffefffffffffffffffffff
+DEBUG: Scrambled data: 00000000000080000000000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffdfffffffffffffffffff, Descrambled: ffffffffffffdfffffffffffffffffff
+DEBUG: Scrambled data: 00000000000100000000000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffffbfffffffffffffffffff, Descrambled: ffffffffffffbfffffffffffffffffff
+DEBUG: Scrambled data: 00000000000200000000000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffff7fffffffffffffffffff, Descrambled: ffffffffffff7fffffffffffffffffff
+DEBUG: Scrambled data: 00000000000400000000000000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffeffffffffffffffffffff, Descrambled: fffffffffffeffffffffffffffffffff
+DEBUG: Scrambled data: 00000000000800000000000000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffdffffffffffffffffffff, Descrambled: fffffffffffdffffffffffffffffffff
+DEBUG: Scrambled data: 00000000001000000000000000000000 (Control: 0)
+PASS: Data block - Original: fffffffffffbffffffffffffffffffff, Descrambled: fffffffffffbffffffffffffffffffff
+DEBUG: Scrambled data: 00000000002000000000000000000000 (Control: 0)
+PASS: Data block - Original: fffffffffff7ffffffffffffffffffff, Descrambled: fffffffffff7ffffffffffffffffffff
+DEBUG: Scrambled data: 00000000004000000000000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffefffffffffffffffffffff, Descrambled: ffffffffffefffffffffffffffffffff
+DEBUG: Scrambled data: 00000000008000000000000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffdfffffffffffffffffffff, Descrambled: ffffffffffdfffffffffffffffffffff
+DEBUG: Scrambled data: 00000000010000000000000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffffbfffffffffffffffffffff, Descrambled: ffffffffffbfffffffffffffffffffff
+DEBUG: Scrambled data: 00000000020000000000000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffff7fffffffffffffffffffff, Descrambled: ffffffffff7fffffffffffffffffffff
+DEBUG: Scrambled data: 00000000040000000000000000000000 (Control: 0)
+PASS: Data block - Original: fffffffffeffffffffffffffffffffff, Descrambled: fffffffffeffffffffffffffffffffff
+DEBUG: Scrambled data: 00000000080000000000000000000000 (Control: 0)
+PASS: Data block - Original: fffffffffdffffffffffffffffffffff, Descrambled: fffffffffdffffffffffffffffffffff
+DEBUG: Scrambled data: 00000000100000000000000000000000 (Control: 0)
+PASS: Data block - Original: fffffffffbffffffffffffffffffffff, Descrambled: fffffffffbffffffffffffffffffffff
+DEBUG: Scrambled data: 00000000200000000000000000000000 (Control: 0)
+PASS: Data block - Original: fffffffff7ffffffffffffffffffffff, Descrambled: fffffffff7ffffffffffffffffffffff
+DEBUG: Scrambled data: 00000000400000000000000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffefffffffffffffffffffffff, Descrambled: ffffffffefffffffffffffffffffffff
+DEBUG: Scrambled data: 00000000800000000000000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffdfffffffffffffffffffffff, Descrambled: ffffffffdfffffffffffffffffffffff
+DEBUG: Scrambled data: 00000001000000000000000000000000 (Control: 0)
+PASS: Data block - Original: ffffffffbfffffffffffffffffffffff, Descrambled: ffffffffbfffffffffffffffffffffff
+DEBUG: Scrambled data: 00000002000000000000000000000000 (Control: 0)
+PASS: Data block - Original: ffffffff7fffffffffffffffffffffff, Descrambled: ffffffff7fffffffffffffffffffffff
+DEBUG: Scrambled data: 00000004000000000000000000000000 (Control: 0)
+PASS: Data block - Original: fffffffeffffffffffffffffffffffff, Descrambled: fffffffeffffffffffffffffffffffff
+DEBUG: Scrambled data: 00000008000000000000000000000000 (Control: 0)
+PASS: Data block - Original: fffffffdffffffffffffffffffffffff, Descrambled: fffffffdffffffffffffffffffffffff
+DEBUG: Scrambled data: 00000010000000000000000000000000 (Control: 0)
+PASS: Data block - Original: fffffffbffffffffffffffffffffffff, Descrambled: fffffffbffffffffffffffffffffffff
+DEBUG: Scrambled data: 00000020000000000000000000000000 (Control: 0)
+PASS: Data block - Original: fffffff7ffffffffffffffffffffffff, Descrambled: fffffff7ffffffffffffffffffffffff
+DEBUG: Scrambled data: 00000040000000000000000000000000 (Control: 0)
+PASS: Data block - Original: ffffffefffffffffffffffffffffffff, Descrambled: ffffffefffffffffffffffffffffffff
+DEBUG: Scrambled data: 00000080000000000000000000000000 (Control: 0)
+PASS: Data block - Original: ffffffdfffffffffffffffffffffffff, Descrambled: ffffffdfffffffffffffffffffffffff
+DEBUG: Scrambled data: 00000100000000000000000000000000 (Control: 0)
+PASS: Data block - Original: ffffffbfffffffffffffffffffffffff, Descrambled: ffffffbfffffffffffffffffffffffff
+DEBUG: Scrambled data: 00000200000000000000000000000000 (Control: 0)
+PASS: Data block - Original: ffffff7fffffffffffffffffffffffff, Descrambled: ffffff7fffffffffffffffffffffffff
+DEBUG: Scrambled data: 00000400000000000000000000000000 (Control: 0)
+PASS: Data block - Original: fffffeffffffffffffffffffffffffff, Descrambled: fffffeffffffffffffffffffffffffff
+DEBUG: Scrambled data: 00000800000000000000000000000000 (Control: 0)
+PASS: Data block - Original: fffffdffffffffffffffffffffffffff, Descrambled: fffffdffffffffffffffffffffffffff
+DEBUG: Scrambled data: 00001000000000000000000000000000 (Control: 0)
+PASS: Data block - Original: fffffbffffffffffffffffffffffffff, Descrambled: fffffbffffffffffffffffffffffffff
+DEBUG: Scrambled data: 00002000000000000000000000000000 (Control: 0)
+PASS: Data block - Original: fffff7ffffffffffffffffffffffffff, Descrambled: fffff7ffffffffffffffffffffffffff
+DEBUG: Scrambled data: 00004000000000000000000000000000 (Control: 0)
+PASS: Data block - Original: ffffefffffffffffffffffffffffffff, Descrambled: ffffefffffffffffffffffffffffffff
+DEBUG: Scrambled data: 00008000000000000000000000000000 (Control: 0)
+PASS: Data block - Original: ffffdfffffffffffffffffffffffffff, Descrambled: ffffdfffffffffffffffffffffffffff
+DEBUG: Scrambled data: 00010000000000000000000000000000 (Control: 0)
+PASS: Data block - Original: ffffbfffffffffffffffffffffffffff, Descrambled: ffffbfffffffffffffffffffffffffff
+DEBUG: Scrambled data: 00020000000000000000000000000000 (Control: 0)
+PASS: Data block - Original: ffff7fffffffffffffffffffffffffff, Descrambled: ffff7fffffffffffffffffffffffffff
+DEBUG: Scrambled data: 00040000000000000000000000000000 (Control: 0)
+PASS: Data block - Original: fffeffffffffffffffffffffffffffff, Descrambled: fffeffffffffffffffffffffffffffff
+DEBUG: Scrambled data: 00080000000000000000000000000000 (Control: 0)
+PASS: Data block - Original: fffdffffffffffffffffffffffffffff, Descrambled: fffdffffffffffffffffffffffffffff
+DEBUG: Scrambled data: 00100000000000000000000000000000 (Control: 0)
+PASS: Data block - Original: fffbffffffffffffffffffffffffffff, Descrambled: fffbffffffffffffffffffffffffffff
+DEBUG: Scrambled data: 00200000000000000000000000000000 (Control: 0)
+PASS: Data block - Original: fff7ffffffffffffffffffffffffffff, Descrambled: fff7ffffffffffffffffffffffffffff
+DEBUG: Scrambled data: 00400000000000000000000000000000 (Control: 0)
+PASS: Data block - Original: ffefffffffffffffffffffffffffffff, Descrambled: ffefffffffffffffffffffffffffffff
+DEBUG: Scrambled data: 00800000000000000000000000000000 (Control: 0)
+PASS: Data block - Original: ffdfffffffffffffffffffffffffffff, Descrambled: ffdfffffffffffffffffffffffffffff
+DEBUG: Scrambled data: 01000000000000000000000000000000 (Control: 0)
+PASS: Data block - Original: ffbfffffffffffffffffffffffffffff, Descrambled: ffbfffffffffffffffffffffffffffff
+DEBUG: Scrambled data: 02000000000000000000000000000000 (Control: 0)
+PASS: Data block - Original: ff7fffffffffffffffffffffffffffff, Descrambled: ff7fffffffffffffffffffffffffffff
+DEBUG: Scrambled data: 04000000000000000000000000000000 (Control: 0)
+PASS: Data block - Original: feffffffffffffffffffffffffffffff, Descrambled: feffffffffffffffffffffffffffffff
+DEBUG: Scrambled data: 08000000000000000000000000000000 (Control: 0)
+PASS: Data block - Original: fdffffffffffffffffffffffffffffff, Descrambled: fdffffffffffffffffffffffffffffff
+DEBUG: Scrambled data: 10000000000000000000000000000000 (Control: 0)
+PASS: Data block - Original: fbffffffffffffffffffffffffffffff, Descrambled: fbffffffffffffffffffffffffffffff
+DEBUG: Scrambled data: 20000000000000000000000000000000 (Control: 0)
+PASS: Data block - Original: f7ffffffffffffffffffffffffffffff, Descrambled: f7ffffffffffffffffffffffffffffff
+DEBUG: Scrambled data: 40000000000000000000000000000000 (Control: 0)
+PASS: Data block - Original: efffffffffffffffffffffffffffffff, Descrambled: efffffffffffffffffffffffffffffff
+DEBUG: Scrambled data: 80000000000000000000000000000000 (Control: 0)
+PASS: Data block - Original: dfffffffffffffffffffffffffffffff, Descrambled: dfffffffffffffffffffffffffffffff
+PASS: Data block - Original: bfffffffffffffffffffffffffffffff, Descrambled: bfffffffffffffffffffffffffffffff
+PASS: Data block - Original: 7fffffffffffffffffffffffffffffff, Descrambled: 7fffffffffffffffffffffffffffffff
+
+--- Test 5: Back-to-Back Transactions ---
+DEBUG: Scrambled data: ffffffffffffffffffffffffffffffff (Control: 0)
+DEBUG: Scrambled data: fffffffffffffffffffffffffefefefe (Control: 0)
+DEBUG: Scrambled data: fffffffffffffffffffffffffdfdfdfd (Control: 0)
+DEBUG: Scrambled data: fffffffffffffffffffffffffcfcfcfc (Control: 0)
+DEBUG: Scrambled data: fffffffffffffffffffffffffbfbfbfb (Control: 0)
+DEBUG: Scrambled data: fffffffffffffffffffffffffafafafa (Control: 0)
+PASS: Data block - Original: 00000000000000000000000000000000, Descrambled: 00000000000000000000000000000000
+DEBUG: Scrambled data: fffffffffffffffffffffffff9f9f9f9 (Control: 0)
+PASS: Data block - Original: 00000000000000000000000001010101, Descrambled: 00000000000000000000000001010101
+DEBUG: Scrambled data: fffffffffffffffffffffffff8f8f8f8 (Control: 0)
+PASS: Data block - Original: 00000000000000000000000002020202, Descrambled: 00000000000000000000000002020202
+DEBUG: Scrambled data: fffffffffffffffffffffffff7f7f7f7 (Control: 0)
+PASS: Data block - Original: 00000000000000000000000003030303, Descrambled: 00000000000000000000000003030303
+DEBUG: Scrambled data: fffffffffffffffffffffffff6f6f6f6 (Control: 0)
+PASS: Data block - Original: 00000000000000000000000004040404, Descrambled: 00000000000000000000000004040404
+PASS: Data block - Original: 00000000000000000000000005050505, Descrambled: 00000000000000000000000005050505
+PASS: Data block - Original: 00000000000000000000000006060606, Descrambled: 00000000000000000000000006060606
+PASS: Data block - Original: 00000000000000000000000007070707, Descrambled: 00000000000000000000000007070707
+PASS: Data block - Original: 00000000000000000000000008080808, Descrambled: 00000000000000000000000008080808
+PASS: Data block - Original: 00000000000000000000000009090909, Descrambled: 00000000000000000000000009090909
+
+--- Test 6: Timing Test - 8 Packets (1 per clock) ---
+Starting timing test at time: 7395000
+Cycle 1: Sending packet 0: deadbeefcafebabe123456789abcdef0
+Cycle 2: Sending packet 1: 11111111222222223333333344444444
+Cycle 3: Sending packet 2: 55555555666666667777777788888888
+Cycle 4: Sending packet 3: 99999999aaaaaaaabbbbbbbbcccccccc
+Cycle 5: Sending packet 4: ddddddddeeeeeeeeffffffff00000000
+Cycle 6: Sending packet 5: fedcba98765432100123456789abcdef
+Cycle 7: Sending packet 6: a5a5a5a55a5a5a5ac3c3c3c33c3c3c3c
+DEBUG: Scrambled data: 2152411035014541edcba9876543210f (Control: 0)
+Cycle 8: Sending packet 7: 0f0f0f0ff0f0f0f033333333cccccccc
+DEBUG: Scrambled data: eeeeeeeeddddddddccccccccbbbbbbbb (Control: 0)
+Packet transmission completed at time: 7485000
+Total transmission time: 90000 (8 packets in 9 clock cycles)
+DEBUG: Scrambled data: aaaaaaaa999999998888888877777777 (Control: 0)
+DEBUG: Scrambled data: 66666666555555554444444433333333 (Control: 0)
+DEBUG: Scrambled data: 2222

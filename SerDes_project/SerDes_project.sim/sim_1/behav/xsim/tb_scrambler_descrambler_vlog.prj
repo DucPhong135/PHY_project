@@ -1,0 +1,12 @@
+# compile verilog/system verilog design source files
+sv xil_defaultlib  \
+"../../../../../Descrambler.sv" \
+"../../../../../Parallel_LFSR.sv" \
+"../../../../../Scrambler.sv" \
+"../../../../../tb_scrambler_descrambler.sv" \
+
+# compile glbl module
+verilog xil_defaultlib "glbl.v"
+
+# Do not sort compile order
+nosort
