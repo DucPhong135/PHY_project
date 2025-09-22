@@ -14,12 +14,31 @@ package tl_pkg;
   //----------------------------------------------------------------
   // User-bus command channel (example: AXI-Lite-like)
   //----------------------------------------------------------------
-  typedef struct packed {
-    logic [63:0] addr;   // byte address
-    logic [9:0]  len;    // in DW (1-1024)
-    logic        wr_en;  // 1 = write, 0 = read
-    logic [3:0]  be;     // byte enable
-  } tl_cmd_t;
+typedef enum logic [1:0] {
+  CMD_MEM  = 2'b00,  // Memory Read/Write
+  CMD_CFG  = 2'b01,  // Config Read/Write (Type 0)
+  CMD_CPL  = 2'b10   // Completion (separate struct usually, but reserved here)
+} tl_cmd_type_e;
+
+typedef struct packed {
+  // Transaction type
+  tl_cmd_type_e type;    
+
+  // Common fields
+  logic [9:0]  len;       // Length in DWs (1–1024)
+  logic        wr_en;     // 1 = Write, 0 = Read
+  logic [3:0]  be;        // Byte enables (FirstDWBE/LastDWBE)
+
+  // Memory-specific
+  logic [63:0] addr;      // Byte address (used if type = CMD_MEM)
+
+  // Config-specific (BDF + register number)
+  logic [7:0]  bus;       // Bus Number
+  logic [4:0]  device;    // Device Number
+  logic [2:0]  function_num;  // Function Number
+  logic [9:0]  reg_num;   // Config register number (DWORD aligned)
+} tl_cmd_t;
+
 
   //----------------------------------------------------------------
   // User-bus data channel
@@ -40,5 +59,17 @@ package tl_pkg;
     logic [7:0]  cplh;
     logic [11:0] cpld;
   } tl_credit_t;
+
+  //----------------------------------------------------------------
+  // Completion command (for completion generation)
+  //----------------------------------------------------------------
+  typedef struct packed {
+  logic [15:0] requester_id;
+  logic [7:0]  tag;
+  logic [2:0]  status;       // Successful, UR, CA
+  logic [11:0] byte_count;
+  logic [6:0]  lower_addr;
+} tl_cpl_cmd_t;
+
 
 endpackage : tl_pkg

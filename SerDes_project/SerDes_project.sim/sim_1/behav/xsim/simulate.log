@@ -612,4 +612,23 @@ Packet transmission completed at time: 7485000
 Total transmission time: 90000 (8 packets in 9 clock cycles)
 DEBUG: Scrambled data: aaaaaaaa999999998888888877777777 (Control: 0)
 DEBUG: Scrambled data: 66666666555555554444444433333333 (Control: 0)
-DEBUG: Scrambled data: 2222
+DEBUG: Scrambled data: 222222221111111100000000ffffffff (Control: 0)
+DEBUG: Scrambled data: 0123456789abcdeffedcba9876543210 (Control: 0)
+PASS: Data block - Original: deadbeefcafebabe123456789abcdef0, Descrambled: deadbeefcafebabe123456789abcdef0
+DEBUG: Scrambled data: 5a5a5a5aa5a5a5a53c3c3c3cc3c3c3c3 (Control: 0)
+PASS: Data block - Original: 11111111222222223333333344444444, Descrambled: 11111111222222223333333344444444
+DEBUG: Scrambled data: f0f0f0f00f0f0f0fcccccccc33333333 (Control: 0)
+PASS: Data block - Original: 55555555666666667777777788888888, Descrambled: 55555555666666667777777788888888
+PASS: Data block - Original: 99999999aaaaaaaabbbbbbbbcccccccc, Descrambled: 99999999aaaaaaaabbbbbbbbcccccccc
+PASS: Data block - Original: ddddddddeeeeeeeeffffffff00000000, Descrambled: ddddddddeeeeeeeeffffffff00000000
+PASS: Data block - Original: fedcba98765432100123456789abcdef, Descrambled: fedcba98765432100123456789abcdef
+PASS: Data block - Original: a5a5a5a55a5a5a5ac3c3c3c33c3c3c3c, Descrambled: a5a5a5a55a5a5a5ac3c3c3c33c3c3c3c
+PASS: Data block - Original: 0f0f0f0ff0f0f0f033333333cccccccc, Descrambled: 0f0f0f0ff0f0f0f033333333cccccccc
+Timing test completed successfully
+
+=== Test Results ===
+Total Tests: 300
+Passed: 300
+Failed: 0
+*** ALL TESTS PASSED ***
+$finish called at time : 7785 ns : File "D:/Verilog_project/SerDes/tb_scrambler_descrambler.sv" Line 132
