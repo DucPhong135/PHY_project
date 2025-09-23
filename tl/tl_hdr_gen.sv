@@ -1,7 +1,7 @@
 module tl_hdr_gen #(
   parameter int TAG_W             = 8,
   parameter int MAX_PAYLOAD_BYTES = 256,
-  parameter int REQUESTER_ID = 16'h1234
+  parameter int REQUESTER_ID = 16'h0000
 )(
   input  logic                   clk,
   input  logic                   rst_n,
@@ -29,12 +29,17 @@ module tl_hdr_gen #(
   output logic                   is_cpl_o      // for replay buffer, etc.
 );
   // FSM states
-  localparam FSM_IDLE      = 2'b00;
-  localparam FSM_WAIT_TAG  = 2'b01;
-  localparam FSM_GEN_HDR   = 2'b10;
-  localparam FSM_WAIT_CRED = 2'b11;
+typedef enum logic [2:0] {
+  FSM_IDLE,
+  FSM_DECODE,
+  FSM_WAIT_TAG,
+  FSM_GEN_HDR,
+  FSM_WAIT_CRED,
+  FSM_UNSUPPORTED   // <-- new state
+} fsm_e;
 
-  logic [1:0] fsm_state, fsm_next;
+
+  logic [2:0] fsm_state, fsm_next;
   logic [TAG_W-1:0] cmd_tag_reg;
   tl_pkg::tl_cmd_t cmd_reg;
 
@@ -51,9 +56,15 @@ always_comb begin
     case (fsm_state)
         FSM_IDLE: begin
             if (cmd_valid_i) begin
-                fsm_next = FSM_WAIT_TAG;
+                fsm_next = FSM_DECODE;
             end
         end
+        FSM_DECODE: begin
+            if (cmd_i.type == tl_pkg::tl_cmd_type_e'('CMD_MEM) || cmd_i.type == tl_pkg::tl_cmd_type_e'('CMD_CFG)) begin
+                fsm_next = FSM_WAIT_TAG;
+            end else begin
+                fsm_next = FSM_UNSUPPORTED; // Unsupported command type
+            end
         FSM_WAIT_TAG: begin
             if(cmd_reg.wr_en == 1'b1) begin
               fsm_next = FSM_GEN_HDR;
@@ -74,6 +85,10 @@ always_comb begin
             if (credit_ok_i && hdr_ready_i) begin
                 fsm_next = FSM_IDLE;
             end
+        end
+        FSM_UNSUPPORTED: begin
+            // Stay in UNSUPPORTED state until reset
+            fsm_next = FSM_IDLE; //simply go back to IDLE on next cycle
         end
         default: fsm_next = FSM_IDLE;
     endcase

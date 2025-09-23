@@ -63,13 +63,17 @@ typedef struct packed {
   //----------------------------------------------------------------
   // Completion command (for completion generation)
   //----------------------------------------------------------------
-  typedef struct packed {
+  localparam int TAG_W = 8; // Default tag width if not overridden
+typedef struct packed {
   logic [15:0] requester_id;
-  logic [7:0]  tag;
-  logic [2:0]  status;       // Successful, UR, CA
+  logic [TAG_W-1:0] tag;
   logic [11:0] byte_count;
   logic [6:0]  lower_addr;
-} tl_cpl_cmd_t;
+  logic [2:0]  cpl_status; // SC=0, UR=1, CA=2
+  logic        has_data;   // 1 = CplD, 0 = Cpl
+  logic [255:0] data;      // completion payload (optional)
+} cpl_gen_cmd_t;
+
 
 
 endpackage : tl_pkg
