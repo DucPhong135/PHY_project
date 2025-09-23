@@ -1,6 +1,7 @@
 module tl_hdr_gen #(
   parameter int TAG_W             = 8,
-  parameter int MAX_PAYLOAD_BYTES = 256
+  parameter int MAX_PAYLOAD_BYTES = 256,
+  parameter int REQUESTER_ID = 16'h1234
 )(
   input  logic                   clk,
   input  logic                   rst_n,
@@ -137,11 +138,200 @@ always_ff @(posedge clk or negedge rst_n) begin
 end
 
 
-always_comb begin
-    if(cmd_reg.type == tl_pkg::tl_cmd_type_e'('CMD_MEM)) begin
-        hdr_o[7:0]    = (cmd_reg.wr_en) ? 8'h20 : 8'h00; // Fmt/Type: 32-bit Memory Read/Write
-        hdr_o[15:8]   = 8'h00; // TC/Reserved
-        hdr_o[]
+always_ff @(posedge clk or negedge rst_n) begin
+    hdr_o <= hdr_o; // default hold value
+    if(!rst_n) begin
+        hdr_o = '0;
+    end
+    else if(fsm_state == FSM_GEN_HDR) begin
+        if(cmd_reg.type == tl_pkg::tl_cmd_type_e'('CMD_MEM)) begin
+            if(cmd_reg.addr[63:32] != 32'h0) begin
+                // 64-bit address
+                if(cmd_reg.wr_en == 1'b1) begin
+                    hdr_o[127:120] <= 8'h60; // Memory Write 64
+                    hdr_o[119:112] <= 4'b0000; // TC=0, Reserved=0
+                    hdr_o[111] <= 1'b1; //TD bit
+                    hdr_o[110] <= 1'b0; //EP bit
+                    hdr_o[109:106] <= 4'b0000; //Attr + AT
+                    hdr_o[105:96] <= cmd_reg.len; // Length in DWs
+                    hdr_o[95:80] <= REQUESTER_ID; // Requester ID
+                    hdr_o[79:72] <= 8'h00; // Tag
+                    // Byte Enables
+                    case (cmd_reg.addr[1:0]) // DW alignment
+                        2'b00: begin
+                            hdr_o[67:64] <= 4'b1111; // First DW BE
+                            hdr_o[71:68] <= 4'b1111; // Last DW BE
+                        end
+                        2'b01: begin
+                            hdr_o[67:64] <= 4'b1110;
+                            hdr_o[71:68] <= 4'b0001;
+                        end
+                        2'b10: begin
+                            hdr_o[67:64] <= 4'b1100;
+                            hdr_o[71:68] <= 4'b0011;
+                        end
+                        2'b11: begin
+                            hdr_o[67:64] <= 4'b1000;
+                            hdr_o[71:68] <= 4'b0111;
+                        end
+                        default: begin 
+                            hdr_o[67:64] <= 4'b1111;
+                            hdr_o[71:68] <= 4'b1111;
+                        end
+                    endcase
+                    hdr_o[63:32] <= cmd_reg.addr[63:32]; // Address [63:32]
+                    hdr_o[31:2] <= cmd_reg.addr[31:2]; // Address [31:2]
+                    hdr_o[1:0] <= 2'b00; // Reserved
+                end else begin
+                    hdr_o[127:120] <= 8'h20; // Memory Read 64
+                    hdr_o[119:112] <= 4'b0000; // TC=0, Reserved=0
+                    hdr_o[111] <= 1'b1; //TD bit
+                    hdr_o[110] <= 1'b0; //EP bit
+                    hdr_o[109:106] <= 4'b0000; //Attr + AT
+                    hdr_o[105:96] <= cmd_reg.len; // Length in DWs
+                    hdr_o[95:80] <= REQUESTER_ID; // Requester ID
+                    hdr_o[79:72] <= cmd_tag_reg; // Tag
+                    // Byte Enables
+                    case (cmd_reg.addr[1:0]) // DW alignment
+                        2'b00: begin
+                            hdr_o[67:64] <= 4'b1111; // First DW BE
+                            hdr_o[71:68] <= 4'b1111; // Last DW BE
+                        end
+                        2'b01: begin
+                            hdr_o[67:64] <= 4'b1110;
+                            hdr_o[71:68] <= 4'b0001;
+                        end
+                        2'b10: begin
+                            hdr_o[67:64] <= 4'b1100;
+                            hdr_o[71:68] <= 4'b0011;
+                        end
+                        2'b11: begin
+                            hdr_o[67:64] <= 4'b1000;
+                            hdr_o[71:68] <= 4'b0111;
+                        end
+                        default: begin 
+                            hdr_o[67:64] <= 4'b1111;
+                            hdr_o[71:68] <= 4'b1111;
+                        end
+                    endcase
+                    hdr_o[63:32] <= cmd_reg.addr[63:32]; // Address [63:32]
+                    hdr_o[31:2] <= cmd_reg.addr[31:2]; // Address [31:2]
+                    hdr_o[1:0] <= 2'b00; // Reserved
+                end
+            end else begin
+                // 32-bit address
+                if(cmd_reg.wr_en == 1'b1) begin
+                    hdr_o[127:120] <= 8'h40; // Memory Write 32
+                    hdr_o[119:112] <= 4'b0000; // TC=0, Reserved=0
+                    hdr_o[111] <= 1'b1; //TD bit
+                    hdr_o[110] <= 1'b0; //EP bit
+                    hdr_o[109:106] <= 4'b0000; //Attr + AT
+                    hdr_o[105:96] <= cmd_reg.len; // Length in DWs
+                    hdr_o[95:80] <= REQUESTER_ID; // Requester ID
+                    hdr_o[79:72] <= 8'h00; // Tag
+                    // Byte Enables
+                    case (cmd_reg.addr[1:0]) // DW alignment
+                        2'b00: begin
+                            hdr_o[67:64] <= 4'b1111; // First DW BE
+                            hdr_o[71:68] <= 4'b1111; // Last DW BE
+                        end
+                        2'b01: begin
+                            hdr_o[67:64] <= 4'b1110;
+                            hdr_o[71:68] <= 4'b0001;
+                        end
+                        2'b10: begin
+                            hdr_o[67:64] <= 4'b1100;
+                            hdr_o[71:68] <= 4'b0011;
+                        end
+                        2'b11: begin
+                            hdr_o[67:64] <= 4'b1000;
+                            hdr_o[71:68] <= 4'b0111;
+                        end
+                        default: begin 
+                            hdr_o[67:64] <= 4'b1111;
+                            hdr_o[71:68] <= 4'b1111;
+                        end
+                    endcase
+                    hdr_o[63:34] <= cmd_reg.addr[31:2]; // Address [63:32]
+                    hdr_o[33:32] <= 2'b00; // Reserved
+                    hdr_o[31:0] <= 32'hXXXX_XXXX; // No Address [31:0] for 32-bit addr
+                end else begin
+                    hdr_o[127:120] <= 8'h00; // Memory Read 32
+                    hdr_o[119:112] <= 4'b0000; // TC=0, Reserved=0
+                    hdr_o[111] <= 1'b1; //TD bit
+                    hdr_o[110] <= 1'b0; //EP bit
+                    hdr_o[109:106] <= 4'b0000; //Attr + AT
+                    hdr_o[105:96] <= cmd_reg.len; // Length in DWs
+                    hdr_o[95:80] <= REQUESTER_ID; // Requester ID
+                    hdr_o[79:72] <= cmd_tag_reg; // Tag
+                    // Byte Enables
+                    case (cmd_reg.addr[1:0]) // DW alignment
+                        2'b00: begin
+                            hdr_o[67:64] <= 4'b1111; // First DW BE
+                            hdr_o[71:68] <= 4'b1111; // Last DW BE
+                        end
+                        2'b01: begin
+                            hdr_o[67:64] <= 4'b1110;
+                            hdr_o[71:68] <= 4'b0001;
+                        end
+                        2'b10: begin
+                            hdr_o[67:64] <= 4'b1100;
+                            hdr_o[71:68] <= 4'b0011;
+                        end
+                        2'b11: begin
+                            hdr_o[67:64] <= 4'b1000;
+                            hdr_o[71:68] <= 4'b0111;
+                        end
+                        default: begin 
+                            hdr_o[67:64] <= 4'b1111;
+                            hdr_o[71:68] <= 4'b1111;
+                        end
+                    endcase
+                    hdr_o[63:34] <= cmd_reg.addr[31:2]; // Address [63:32]
+                    hdr_o[33:32] <= 2'b00; // Reserved
+                    hdr_o[31:0] <= 32'h0000_0000; // No Address [31:0] for 32-bit addr
+                end
+            end
+        end
+        else if(cmd_reg.type == tl_pkg::tl_cmd_type_e'('CMD_CFG)) begin
+            if(cmd_reg.wr_en == 1'b1) begin
+                hdr_o[127:120] <= 8'h44; // Config Write Type 0
+                hdr_o[119:112] <= 4'b0000; // TC=0, Reserved=0
+                hdr_o[111] <= 1'b1; //TD bit
+                hdr_o[109] <= 1'b0; //EP bit
+                hdr_o[109:106] <= 4'b0000; //Attr + AT
+                hdr_o[105:96] <= 10'b1; // Length in DWs
+                hdr_o[95:80] <= REQUESTER_ID; // Requester ID
+                hdr_o[79:72] <= cmd_tag_reg; // Tag
+                hdr_o[71:68] <= 4'b0000; // Byte Enables last
+                hdr_o[67:64] <= 4'b1111; // Byte Enables first (set default)
+                hdr_o[63:56] <= cmd_reg.bus; // Bus Number
+                hdr_o[55:51] <= cmd_reg.device; // Device Number
+                hdr_o[50:48] <= cmd_reg.function_num; // Function Number
+                hdr_o[47:44] <= 4'b0000; // Reserved
+                hdr_o[43:32] <= {cmd_reg.reg_num, 2'b00}; // Register Number (DWORD aligned)
+                hdr_o[31:0] <= 32'h0000_0000; // No Address [31:0] for Config
+            end else begin
+                hdr_o[127:120] <= 8'h04; // Config Read Type 0
+                hdr_o[119:112] <= 4'b0000; // TC=0, Reserved=0
+                hdr_o[111] <= 1'b1; //TD bit
+                hdr_o[109] <= 1'b0; //EP bit
+                hdr_o[109:106] <= 4'b0000; //Attr + AT
+                hdr_o[105:96] <= 10'b1; // Length in DWs
+                hdr_o[95:80] <= REQUESTER_ID; // Requester ID
+                hdr_o[79:72] <= cmd_tag_reg; // Tag
+                hdr_o[71:68] <= 4'b0000; // Byte Enables last
+                hdr_o[67a:64] <= 4'b1111; // Byte Enables first (set to all 1s for read)
+                hdr_o[63:56] <= cmd_reg.bus; // Bus Number
+                hdr_o[55:51] <= cmd_reg.device; // Device Number
+                hdr_o[50:48] <= cmd_reg.function_num; // Function Number
+                hdr_o[47:44] <= 4'b0000; // Reserved
+                hdr_o[43:32] <= {cmd_reg.reg_num, 2'b00}; // Register Number (DWORD aligned)
+                hdr_o[31:0] <= 32'h0000_0000; // No Address [31:0] for Config
+            end
+        end
+    end
+end
 
 
 assign is_posted_o = (cmd_reg.type == tl_pkg::tl_cmd_type_e'('CMD_MEM) && cmd_reg.wr_en) ? 1'b1 : 1'b0;
