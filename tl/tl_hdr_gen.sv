@@ -333,6 +333,25 @@ always_ff @(posedge clk or negedge rst_n) begin
     end
 end
 
+always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        hdr_valid_o <= 1'b0;
+    end else begin
+        if(hdr_valid_o == 1'b1) 
+            hdr_valid_o <= 1'b0; // de-assert after one cycle
+        else if (fsm_state == FSM_GEN_HDR || fsm_state == FSM_WAIT_CRED) begin
+                if (hdr_ready_i && credit_ok_i) 
+                    hdr_valid_o <= 1'b1;
+                else 
+                    hdr_valid_o <= 1'b0;
+            end else begin
+                hdr_valid_o <= 1'b0;
+            end
+    end
+end
+
+
+
 
 assign is_posted_o = (cmd_reg.type == tl_pkg::tl_cmd_type_e'('CMD_MEM) && cmd_reg.wr_en) ? 1'b1 : 1'b0;
 assign is_cpl_o    = (cmd_reg.type != tl_pkg::tl_cmd_type_e'('CMD_MEM) || !cmd_reg.wr_en) ? 1'b1 : 1'b0;
