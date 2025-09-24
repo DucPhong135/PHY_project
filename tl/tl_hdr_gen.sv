@@ -1,10 +1,11 @@
 module tl_hdr_gen #(
   parameter int TAG_W             = 8,
   parameter int MAX_PAYLOAD_BYTES = 256,
-  parameter int REQUESTER_ID = 16'h0000
 )(
   input  logic                   clk,
   input  logic                   rst_n,
+
+  input [15:0]                  REQUESTER_ID, // Requester ID for commands
 
   // User command channel
   input  tl_pkg::tl_cmd_t        cmd_i,
@@ -18,6 +19,7 @@ module tl_hdr_gen #(
 
   // Credit status from Credit Manager
   input  logic                   credit_ok_i,
+  output logic                   credit_consumed,
 
   // Generated Header out
   output logic [127:0]           hdr_o,
@@ -34,6 +36,7 @@ typedef enum logic [2:0] {
   FSM_DECODE,
   FSM_WAIT_TAG,
   FSM_GEN_HDR,
+  FSM_SEND_HDR,
   FSM_WAIT_CRED,
   FSM_UNSUPPORTED   // <-- new state
 } fsm_e;
@@ -73,16 +76,19 @@ always_comb begin
             end
         end
         FSM_GEN_HDR: begin
-            if (hdr_ready_i) begin
-                if (credit_ok_i) begin
-                    fsm_next = FSM_IDLE;
-                end else begin
-                    fsm_next = FSM_WAIT_CRED;
-                end
+            if(credit_ok_i) begin
+                fsm_next = FSM_SEND_HDR;
+            end else begin
+                fsm_next = FSM_WAIT_CRED;
             end
         end
         FSM_WAIT_CRED: begin
             if (credit_ok_i && hdr_ready_i) begin
+                fsm_next = FSM_SEND_HDR;
+            end
+        end
+        FSM_SEND_HDR: begin
+            if (hdr_ready_i && hdr_ready_i) begin
                 fsm_next = FSM_IDLE;
             end
         end
@@ -354,7 +360,7 @@ always_ff @(posedge clk or negedge rst_n) begin
     end else begin
         if(hdr_valid_o == 1'b1) 
             hdr_valid_o <= 1'b0; // de-assert after one cycle
-        else if (fsm_state == FSM_GEN_HDR || fsm_state == FSM_WAIT_CRED) begin
+        else if (fsm_state == FSM_SEND_HDR) begin
                 if (hdr_ready_i && credit_ok_i) 
                     hdr_valid_o <= 1'b1;
                 else 
