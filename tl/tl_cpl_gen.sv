@@ -1,6 +1,8 @@
 module tl_cpl_gen #(
   parameter int TAG_W = 8,
-  parameter int MAX_CPLD_PAYLOAD = 256 // in DWs
+  parameter int MAX_CPLD_PAYLOAD = 256, // in DWs
+  parameter int CPLH_WIDTH = 8,
+  parameter int CPLD_WIDTH = 12
 )(
   input  logic                   clk,
   input  logic                   rst_n,
@@ -15,6 +17,12 @@ module tl_cpl_gen #(
     // Credit status from Credit Manager
   input  logic                   credit_hdr_ok_i,
   input logic                   credit_data_ok_i,
+
+  output logic                   cplh_consume_v_i,
+  output logic [CPLH_WIDTH-1:0]  cplh_consume_dw_i,
+
+  output logic                   cpld_consume_v_i,
+  output logic [CPLD_WIDTH-1:0]  cpld_consume_dw_i,
 
   // Generated Completion Header
   output logic [127:0]           cpl_hdr_o,

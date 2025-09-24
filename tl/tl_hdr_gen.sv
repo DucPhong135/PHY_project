@@ -1,6 +1,10 @@
 module tl_hdr_gen #(
   parameter int TAG_W             = 8,
   parameter int MAX_PAYLOAD_BYTES = 256,
+  parameter int PH_WIDTH          = 8,
+  parameter int PD_WIDTH          = 12,
+  parameter int NPH_WIDTH         = 8,
+  parameter int NPD_WIDTH         = 12
 )(
   input  logic                   clk,
   input  logic                   rst_n,
@@ -17,9 +21,25 @@ module tl_hdr_gen #(
   input  logic                   tag_valid_i,
   output logic                   tag_consume_o,
 
-  // Credit status from Credit Manager
-  input  logic                   credit_ok_i,
-  output logic                   credit_consumed,
+// ---------------- Credit-manager interface ------------
+  // Availability
+  input  logic                   ph_credit_ok_i,
+  input  logic                   pd_credit_ok_i,
+  input  logic                   nph_credit_ok_i,
+  input  logic                   npd_credit_ok_i,
+
+  // Consume pulses
+  output logic                   ph_consume_v_o,
+  output logic [PH_WIDTH-1:0]    ph_consume_dw_o,
+
+  output logic                   pd_consume_v_o,
+  output logic [PD_WIDTH-1:0]    pd_consume_dw_o,
+
+  output logic                   nph_consume_v_o,
+  output logic [NPH_WIDTH-1:0]   nph_consume_dw_o,
+
+  output logic                   npd_consume_v_o,
+  output logic [NPD_WIDTH-1:0]   npd_consume_dw_o,
 
   // Generated Header out
   output logic [127:0]           hdr_o,
@@ -68,6 +88,7 @@ always_comb begin
             end else begin
                 fsm_next = FSM_UNSUPPORTED; // Unsupported command type
             end
+        end
         FSM_WAIT_TAG: begin
             if(cmd_reg.wr_en == 1'b1) begin
               fsm_next = FSM_GEN_HDR;
@@ -88,7 +109,7 @@ always_comb begin
             end
         end
         FSM_SEND_HDR: begin
-            if (hdr_ready_i && hdr_ready_i) begin
+            if (hdr_ready_i && ph_credit_ok_i) begin
                 fsm_next = FSM_IDLE;
             end
         end
