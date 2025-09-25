@@ -1,6 +1,6 @@
 module tl_cpl_gen #(
   parameter int TAG_W = 8,
-  parameter int MAX_CPLD_PAYLOAD = 256, // in DWs
+  parameter int MAX_CPLD_PAYLOAD = 8, // in DWs
   parameter int CPLH_WIDTH = 8,
   parameter int CPLD_WIDTH = 12
 )(
@@ -25,7 +25,7 @@ module tl_cpl_gen #(
   output logic [CPLD_WIDTH-1:0]  cpld_consume_dw_i,
 
   // Generated Completion Header
-  output logic [127:0]           cpl_hdr_o,
+  output logic [128:0]           cpl_hdr_o,
   output logic                   cpl_hdr_valid_o,
   input  logic                   cpl_hdr_ready_i,
 
@@ -48,6 +48,7 @@ typedef enum logic[2:0] {
 fsm_state state, next_state;
 
 tl_pkg::tl_gen_cmd_t cpl_cmd_reg;
+
 
 
   // -----------------------------------------------------------------
@@ -81,23 +82,110 @@ tl_pkg::tl_gen_cmd_t cpl_cmd_reg;
       FSM_IDLE: begin
         if (cpl_cmd_valid_i) begin
           cpl_cmd_ready_o = 1'b1;
-          next_state = FSM_DECODE;
+          next_state = FSM_GEN_HDR;
         end
       end
 
-      FSM_DECODE: begin
+      FSM_GEN_HDR: begin
         // Decode the command and decide next steps
-        if (cpl_cmd_valid_i && cpl_cmd_ready_o) begin
-          case (cpl_cmd_i.opcode)
-            tl_pkg::OP_CPLD, tl_pkg::OP_CPL: begin
-              next_state = FSM_GEN_HDR;
-            end
-            default: begin
-              next_state = FSM_UNSUPPORTED;
-            end
-          endcase
-        end else begin
-          next_state = FSM_IDLE; // No valid command, go back to idle
+       case (tl_gen_cmd_t.cpl_status)
+                tl_pkg::tl_cpl_status_e'(CPL_SUCCESS): begin
+                    if(cpl_cmd_reg.has_data && hdr_ready_i) begin
+                        if (credit_hdr_ok_i && credit_data_ok_i) begin
+                            fsm_next = FSM_SEND_HDR; // For write, go back to IDLE after sending header
+                        end else begin
+                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
+                        end
+                    end 
+                    else if(!cpl_cmd_reg.has_data && hdr_ready_i) begin
+                        if (credit_hdr_ok_i) begin
+                            fsm_next = FSM_SEND_HDR; // For read, go back to IDLE after sending header
+                        end else begin
+                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
+                        end
+                    end else begin
+                        fsm_next = FSM_GEN_HDR; // wait until credits are available
+                    end
+                end
+                tl_pkg::tl_cpl_status_e'(CPL_UR): begin
+                    if(!cpl_cmd_reg.has_data && hdr_ready_i) begin
+                        if( credit_hdr_ok_i) begin
+                            fsm_next = FSM_SEND_HDR; // For read, go back to IDLE after sending header
+                        end else begin
+                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
+                        end
+                    else fsm_next = FSM_SEND_HDR; // wait until credits are available
+                    end
+                end
+            endcase
+      end
+      FSM_SEND_HDR: begin
+         case (tl_gen_cmd_t.cpl_status)
+                tl_pkg::tl_cpl_status_e'(CPL_SUCCESS): begin
+                    if(cpl_cmd_reg.has_data && hdr_ready_i) begin
+                        if (credit_hdr_ok_i && credit_data_ok_i) begin
+                            fsm_next = FSM_SEND_DATA; // For write, go back to IDLE after sending header
+                        end else begin
+                            fsm_next = FSM_SEND_HDR; // wait until credits are available
+                        end
+                    end 
+                    else if(!cpl_cmd_reg.has_data && hdr_ready_i) begin
+                        if (credit_hdr_ok_i) begin
+                            fsm_next = FSM_IDLE; // For read, go back to IDLE after sending header
+                        end else begin
+                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
+                        end
+                    end else begin
+                        fsm_next = FSM_SEND_HDR; // wait until credits are available
+                    end
+                end
+                tl_pkg::tl_cpl_status_e'(CPL_UR): begin
+                    if(!cpl_cmd_reg.has_data && hdr_ready_i) begin
+                        if( credit_hdr_ok_i) begin
+                            fsm_next = FSM_IDLE; // For read, go back to IDLE after sending header
+                        end else begin
+                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
+                        end
+                    else fsm_next = FSM_SEND_HDR; // wait until credits are available
+                    end
+                end
+            endcase
+      end
+      FSM_WAIT_CRED: begin
+       case (tl_gen_cmd_t.cpl_status)
+                tl_pkg::tl_cpl_status_e'(CPL_SUCCESS): begin
+                    if(cpl_cmd_reg.has_data && hdr_ready_i) begin
+                        if (credit_hdr_ok_i && credit_data_ok_i) begin
+                            fsm_next = FSM_SEND_HDR; // For write, go back to IDLE after sending header
+                        end else begin
+                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
+                        end
+                    end 
+                    else if(!cpl_cmd_reg.wr_en && hdr_ready_i) begin
+                        if (credit_hdr_ok_i) begin
+                            fsm_next = FSM_SEND_HDR; // For read, go back to IDLE after sending header
+                        end else begin
+                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
+                        end
+                    end else begin
+                        fsm_next = FSM_WAIT_CRED; // wait until credits are available
+                    end
+                end
+                tl_pkg::tl_cpl_status_e'(CPL_UR): begin
+                    if(!cpl_cmd_reg.wr_en && hdr_ready_i) begin
+                        if(credit_hdr_ok_i) begin
+                            fsm_next = FSM_SEND_HDR; // For read, go back to IDLE after sending header
+                        end else begin
+                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
+                        end
+                    else fsm_next = FSM_WAIT_CRED; // wait until credits are available
+                    end
+                end
+            endcase
+      end
+      FSM_SEND_DATA: begin
+        if(cpl_data_valid_o) begin
+          next_state = FSM_IDLE;
         end
       end
     endcase
@@ -128,6 +216,7 @@ always_ff @(posedge clk or negedge rst_n) begin
     cpl_hdr_o <= '0;
   end else begin
     if(fsm_state == FSM_GEN_HDR) begin
+      // Common fields for both CPL and CPLD
       if(cpl_cmd_reg.cpl_status == 3'd0) begin
         if(cpl_cmd_reg.has_data)
           cpl_hdr_o[127:120] <= 8'h4A; // CPLD
@@ -146,7 +235,7 @@ always_ff @(posedge clk or negedge rst_n) begin
           cpl_hdr_o[76] <= 1'b0; // BCM
           if(cpl_cmd_reg.has_data)
             cpl_hdr_o[75:64] <= cpl_cmd_reg.byte_count; // Byte Count
-          else
+          else b
             cpl_hdr_o[75:64] <= 12'h4; // Byte Count 0 for CPL
           cpl_hdr_o[63:48] <= cpl_cmd_reg.requester_id; // Requester ID from command
           cpl_hdr_o[47:40] <= cpl_cmd_reg.tag; // Tag from command
@@ -154,8 +243,8 @@ always_ff @(posedge clk or negedge rst_n) begin
           cpl_hdr_o[39:32] <= {1'b0, cpl_cmd_reg.lower_addr}; // Lower Address
         else
           cpl_hdr_o[39:32] <= 8'h00; // Lower Address 0 for CPL
-          cpl_hdr_o[31:0] <= 32'h0000_0000; // Reserved
-      end
+        cpl_hdr_o[31:0] <= 32'h0000_0000; // Reserved
+        end
     else if(cpl_cmd_reg.cpl_status == 3'd1) begin
       // Unsupported Completion Status - UR
           cpl_hdr_o[127:120] <= 8'h0A; // CPL
@@ -176,6 +265,7 @@ always_ff @(posedge clk or negedge rst_n) begin
   end
 end
 
+
 always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         cpl_hdr_valid_o <= 1'b0;
@@ -194,15 +284,15 @@ always_ff @(posedge clk or negedge rst_n) begin
 end
 
 assign cpl_has_data_o = (state == FSM_SEND_DATA) && cpl_cmd_reg.has_data;
-assign cpl_data_o = if(state == FSM_SEND_DATA && cpl_cmd_reg.has_data) cpl_cmd_reg.data; else '0;
+assign cpl_data_o = (state == FSM_SEND_DATA && cpl_cmd_reg.has_data)? cpl_cmd_reg.data : 255'b0;
 always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         cpl_data_valid_o <= 1'b0;
     end else begin
-        if(cpl_data_valid_o == 1'b1 && cpl_data_ready_i) 
+        if(cpl_data_valid_o == 1'b1) 
             cpl_data_valid_o <= 1'b0; // de-assert after one cycle
         else if (fsm_state == FSM_SEND_DATA) begin
-                if (cpl_cmd_reg.has_data && credit_ok_i) 
+                if (cpl_cmd_reg.has_data && credit_data_ok_i && cpl_data_ready_i) 
                     cpl_data_valid_o <= 1'b1;
                 else 
                     cpl_data_valid_o <= 1'b0;
@@ -212,5 +302,10 @@ always_ff @(posedge clk or negedge rst_n) begin
     end
 end
 
+// Credit consumption signals
+assign cplh_consume_v_i = cpl_hdr_valid_o && cpl_hdr_ready_i;
+assign cplh_consume_dw_i = 8'b1; // CPL/CPLD header is always 1 DW
 
+assign cpld_consume_v_i = cpl_data_valid_o && cpl_data_ready_i;
+assign cpld_consume_dw_i = (cpl_cmd_reg.has_data) ? ((cpl_cmd_reg.byte_count + 3) >> 2) : 0; // in DWs
 endmodule

@@ -64,12 +64,18 @@ typedef struct packed {
   // Completion command (for completion generation)
   //----------------------------------------------------------------
   localparam int TAG_W = 8; // Default tag width if not overridden
+typedef enum logic [2:0] {
+  CPL_SUCCESS = 3'd0, // Successful Completion
+  CPL_UR      = 3'd1, // Unsupported Request
+  CPL_CA      = 3'd2  // Configuration Accessed
+} tl_cpl_status_e;
+
 typedef struct packed {
   logic [15:0] requester_id;
   logic [TAG_W-1:0] tag;
   logic [11:0] byte_count;
   logic [6:0]  lower_addr;
-  logic [2:0]  cpl_status; // SC=0, UR=1, CA=2
+  tl_cpl_status_e  cpl_status; // SC=0, UR=1, CA=2
   logic        has_data;   // 1 = CplD, 0 = Cpl
   logic [255:0] data;      // completion payload (optional)
 } cpl_gen_cmd_t;
