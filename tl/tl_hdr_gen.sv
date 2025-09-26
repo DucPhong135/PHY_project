@@ -28,19 +28,6 @@ module tl_hdr_gen #(
   input  logic                   nph_credit_ok_i,
   input  logic                   npd_credit_ok_i,
 
-  // Consume pulses
-  output logic                   ph_consume_v_o,
-  output logic [PH_WIDTH-1:0]    ph_consume_dw_o,
-
-  output logic                   pd_consume_v_o,
-  output logic [PD_WIDTH-1:0]    pd_consume_dw_o,
-
-  output logic                   nph_consume_v_o,
-  output logic [NPH_WIDTH-1:0]   nph_consume_dw_o,
-
-  output logic                   npd_consume_v_o,
-  output logic [NPD_WIDTH-1:0]   npd_consume_dw_o,
-
   // Generated Header out
   output logic [127:0]           hdr_o,
   output logic                   hdr_valid_o,
@@ -48,7 +35,6 @@ module tl_hdr_gen #(
 
   // Header attributes
   output logic                   is_posted_o,  // 1=posted, 0=non-posted
-  output logic                   is_cpl_o      // for replay buffer, etc.
 );
   // FSM states
 typedef enum logic [2:0] {
@@ -496,58 +482,5 @@ always_ff @(posedge clk or negedge rst_n) begin
     end
 end
 
-
-// Credit consume logic
-assign ph_consume_v_o = (fsm_state == FSM_SEND_HDR && cmd_reg.wr_en == 1'b1 && hdr_valid_o && hdr_ready_i && cmd_reg.type == tl_pkg::tl_cmd_type_e'('CMD_MEM)) ? 1'b1 : 1'b0;
-assign pd_consume_v_o = (fsm_state == FSM_SEND_HDR && cmd_reg.wr_en == 1'b1 && hdr_valid_o && hdr_ready_i && cmd_reg.type == tl_pkg::tl_cmd_type_e'('CMD_MEM)) ? 1'b1 : 1'b0;
-
-always_comb begin
-        if (fsm_state == FSM_SEND_HDR && cmd_reg.wr_en == 1'b0 && hdr_valid_o && hdr_ready_i && cmd_reg.type == tl_pkg::tl_cmd_type_e'('CMD_MEM)) begin
-            nph_consume_v_o = 1'b1;
-            npd_consume_v_o = 1'b1;
-        end else if (fsm_state == FSM_SEND_HDR && cmd_reg.wr_en == 1'b1 && hdr_valid_o && hdr_ready_i && cmd_reg.type == tl_pkg::tl_cmd_type_e'('CMD_CFG)) begin
-            nph_consume_v_o = 1'b1;
-            npd_consume_v_o = 1'b1;
-        end else if (fsm_state == FSM_SEND_HDR && cmd_reg.wr_en == 1'b0 && hdr_valid_o && hdr_ready_i && cmd_reg.type == tl_pkg::tl_cmd_type_e'('CMD_CFG)) begin
-            nph_consume_v_o = 1'b1;
-            npd_consume_v_o = 1'b1;
-        end
-        else begin
-            nph_consume_v_o = 1'b0;
-            npd_consume_v_o = 1'b0;
-        end    
-end
-
-always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-        ph_consume_dw_o <= '0;
-        pd_consume_dw_o <= '0;
-        nph_consume_dw_o <= '0;
-        npd_consume_dw_o <= '0;
-    end
-    else begin
-        if (fsm_state == FSM_SEND_HDR && cmd_reg.wr_en == 1'b1 && hdr_valid_o && hdr_ready_i && cmd_reg.type == tl_pkg::tl_cmd_type_e'('CMD_MEM)) begin
-            ph_consume_dw_o <= 1; // Always consume 1 PH for header
-            pd_consume_dw_o <= (hdr_o[67:64] == 4'b1111 && hdr_o[71:68] == 4'b1111) ? cmd_reg.len >> 2: cmd_reg.len >> 2 + 1; // Consume PD based on length and byte enables
-        end else if (fsm_state == FSM_SEND_HDR && cmd_reg.wr_en == 1'b0 && hdr_valid_o && hdr_ready_i && cmd_reg.type == tl_pkg::tl_cmd_type_e'('CMD_MEM)) begin
-            nph_consume_dw_o <= 1'b1;
-            npd_consume_dw_o <= '0;
-        end else if (fsm_state == FSM_SEND_HDR && cmd_reg.wr_en == 1'b1 && hdr_valid_o && hdr_ready_i && cmd_reg.type == tl_pkg::tl_cmd_type_e'('CMD_CFG)) begin
-            nph_consume_dw_o <= 1'd1; // Always consume 1 PH for header
-            npd_consume_dw_o <= 1'd1; // Config write is always 1 DW
-        end else if (fsm_state == FSM_SEND_HDR && cmd_reg.wr_en == 1'b0 && hdr_valid_o && hdr_ready_i && cmd_reg.type == tl_pkg::tl_cmd_type_e'('CMD_CFG)) begin
-            nph_consume_dw_o <= 1'b1; // Always consume 1 NPH for header
-            npd_consume_dw_o <= '0;
-        end else begin
-            ph_consume_dw_o <= '0;
-            pd_consume_dw_o <= '0;
-            nph_consume_dw_o <= '0;
-            npd_consume_dw_o <= '0;
-        end
-    end
-end
-
-
 assign is_posted_o = (cmd_reg.type == tl_pkg::tl_cmd_type_e'('CMD_MEM) && cmd_reg.wr_en) ? 1'b1 : 1'b0;
-assign is_cpl_o    = (cmd_reg.type != tl_pkg::tl_cmd_type_e'('CMD_MEM) || !cmd_reg.wr_en) ? 1'b1 : 1'b0;
 endmodule

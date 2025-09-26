@@ -18,14 +18,8 @@ module tl_cpl_gen #(
   input  logic                   credit_hdr_ok_i,
   input logic                   credit_data_ok_i,
 
-  output logic                   cplh_consume_v_i,
-  output logic [CPLH_WIDTH-1:0]  cplh_consume_dw_i,
-
-  output logic                   cpld_consume_v_i,
-  output logic [CPLD_WIDTH-1:0]  cpld_consume_dw_i,
-
   // Generated Completion Header
-  output logic [128:0]           cpl_hdr_o,
+  output logic [127:0]           cpl_hdr_o,
   output logic                   cpl_hdr_valid_o,
   input  logic                   cpl_hdr_ready_i,
 
@@ -48,7 +42,6 @@ typedef enum logic[2:0] {
 fsm_state state, next_state;
 
 tl_pkg::tl_gen_cmd_t cpl_cmd_reg;
-
 
 
   // -----------------------------------------------------------------
@@ -301,11 +294,4 @@ always_ff @(posedge clk or negedge rst_n) begin
             end
     end
 end
-
-// Credit consumption signals
-assign cplh_consume_v_i = cpl_hdr_valid_o && cpl_hdr_ready_i;
-assign cplh_consume_dw_i = 8'b1; // CPL/CPLD header is always 1 DW
-
-assign cpld_consume_v_i = cpl_data_valid_o && cpl_data_ready_i;
-assign cpld_consume_dw_i = (cpl_cmd_reg.has_data) ? ((cpl_cmd_reg.byte_count + 3) >> 2) : 0; // in DWs
 endmodule
