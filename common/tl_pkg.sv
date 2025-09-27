@@ -11,6 +11,15 @@ package tl_pkg;
     logic         is_dllp;// 1 = DLLP, 0 = TLP
   } tl_stream_t;
 
+
+  typedef struct packed {
+    logic [1:0]  hdr_dw;    // 3 or 4 DW
+    logic [11:0] data_dw;   // payload length in DW
+    logic        has_data;  // 1 = TLP has data
+  } tl_meta_t;
+
+
+
   //----------------------------------------------------------------
   // User-bus command channel (example: AXI-Lite-like)
   //----------------------------------------------------------------
