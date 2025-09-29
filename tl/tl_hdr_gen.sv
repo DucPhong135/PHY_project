@@ -281,7 +281,7 @@ always_ff @(posedge clk or negedge rst_n) begin
                 if(cmd_reg.wr_en == 1'b1) begin
                     hdr_o[127:120] <= 8'h60; // Memory Write 64
                     hdr_o[119:112] <= 4'b0000; // TC=0, Reserved=0
-                    hdr_o[111] <= 1'b1; //TD bit
+                    hdr_o[111] <= 1'b0; //TD bit
                     hdr_o[110] <= 1'b0; //EP bit
                     hdr_o[109:106] <= 4'b0000; //Attr + AT
                     hdr_o[105:96] <= cmd_reg.len; // Length in DWs
@@ -316,7 +316,7 @@ always_ff @(posedge clk or negedge rst_n) begin
                 end else begin
                     hdr_o[127:120] <= 8'h20; // Memory Read 64
                     hdr_o[119:112] <= 4'b0000; // TC=0, Reserved=0
-                    hdr_o[111] <= 1'b1; //TD bit
+                    hdr_o[111] <= 1'b0; //TD bit
                     hdr_o[110] <= 1'b0; //EP bit
                     hdr_o[109:106] <= 4'b0000; //Attr + AT
                     hdr_o[105:96] <= cmd_reg.len; // Length in DWs
@@ -354,7 +354,7 @@ always_ff @(posedge clk or negedge rst_n) begin
                 if(cmd_reg.wr_en == 1'b1) begin
                     hdr_o[127:120] <= 8'h40; // Memory Write 32
                     hdr_o[119:112] <= 4'b0000; // TC=0, Reserved=0
-                    hdr_o[111] <= 1'b1; //TD bit
+                    hdr_o[111] <= 1'b0; //TD bit
                     hdr_o[110] <= 1'b0; //EP bit
                     hdr_o[109:106] <= 4'b0000; //Attr + AT
                     hdr_o[105:96] <= cmd_reg.len; // Length in DWs
@@ -428,7 +428,7 @@ always_ff @(posedge clk or negedge rst_n) begin
             if(cmd_reg.wr_en == 1'b1) begin
                 hdr_o[127:120] <= 8'h44; // Config Write Type 0
                 hdr_o[119:112] <= 4'b0000; // TC=0, Reserved=0
-                hdr_o[111] <= 1'b1; //TD bit
+                hdr_o[111] <= 1'b0; //TD bit
                 hdr_o[109] <= 1'b0; //EP bit
                 hdr_o[109:106] <= 4'b0000; //Attr + AT
                 hdr_o[105:96] <= 10'b1; // Length in DWs
@@ -445,7 +445,7 @@ always_ff @(posedge clk or negedge rst_n) begin
             end else begin
                 hdr_o[127:120] <= 8'h04; // Config Read Type 0
                 hdr_o[119:112] <= 4'b0000; // TC=0, Reserved=0
-                hdr_o[111] <= 1'b1; //TD bit
+                hdr_o[111] <= 1'b0; //TD bit
                 hdr_o[109] <= 1'b0; //EP bit
                 hdr_o[109:106] <= 4'b0000; //Attr + AT
                 hdr_o[105:96] <= 10'b1; // Length in DWs
@@ -471,9 +471,9 @@ always_ff @(posedge clk or negedge rst_n) begin
         if(hdr_valid_o == 1'b1) 
             hdr_valid_o <= 1'b0; // de-assert after one cycle
         else if (fsm_state == FSM_SEND_HDR) begin
-            if(cmd_reg.wr_en == 1'b1 && hdr_ready_i && ph_credit_ok_i && pd_credit_ok_i) begin
+            if(cmd_reg.wr_en == 1'b1 && ph_credit_ok_i && pd_credit_ok_i) begin
                 hdr_valid_o <= 1'b1; // For write, go back to IDLE after sending header
-            end else if(!cmd_reg.wr_en && hdr_ready_i && nph_credit_ok_i) begin
+            end else if(!cmd_reg.wr_en && nph_credit_ok_i) begin
                 hdr_valid_o <= 1'b1; // For read, go back to IDLE after sending header
             end else begin
                 hdr_valid_o <= 1'b0;

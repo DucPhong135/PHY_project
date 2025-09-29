@@ -49,13 +49,17 @@ typedef struct packed {
 } tl_cmd_t;
 
 
-  //----------------------------------------------------------------
-  // User-bus data channel
-  //----------------------------------------------------------------
-  typedef struct packed {
-    logic [127:0] data;  // write data or read response
-    logic         last;  // end-of-burst
-  } tl_data_t;
+//----------------------------------------------------------------
+// User-bus data channel (for MemWr / CplD payloads)
+//----------------------------------------------------------------
+typedef struct packed {
+    logic [127:0] data;      // payload data (128b = 4 DWs)
+    logic [63:0]  addr;      // target address (from TLP header, incremented per beat)
+    logic [15:0]  be;        // byte enables (1 bit per byte of data)
+    logic         sop;       // start of packet
+    logic         eop;       // end of packet
+} tl_data_t;
+
 
   //----------------------------------------------------------------
   // Flow-control credit vector (PH/PD/NPH/NPD/CPLH/CPLD)
@@ -84,10 +88,33 @@ typedef struct packed {
   logic [TAG_W-1:0] tag;
   logic [11:0] byte_count;
   logic [6:0]  lower_addr;
-  tl_cpl_status_e  cpl_status; // SC=0, UR=1, CA=2
+  tl_cpl_status_e  cpl_status; // SC=0, UR=1
   logic        has_data;   // 1 = CplD, 0 = Cpl
   logic [255:0] data;      // completion payload (optional)
 } cpl_gen_cmd_t;
+
+typedef struct packed {
+  logic        is_read;        // 1 = CfgRd, 0 = CfgWr
+  logic [9:0]  reg_num;        // Register number (DW address from header)
+  logic [3:0]  first_be;       // Byte enables (valid for the single DW)
+  logic [31:0] data;           // Write data (for CfgWr; ignored for CfgRd)
+  logic [15:0] requester_id;   // From TLP header
+  logic [TAG_W-1:0] tag;       // From TLP header
+} cfg_req_t;
+
+typedef struct packed {
+    logic [TAG_W-1:0] tag;         // identifies the original request
+    logic [15:0]      requester_id;// who issued the request (optional for simple system)
+    logic [15:0]      completer_id;// who generated the completion
+    logic [2:0]       status;      // Completion Status: SC / UR / CA
+    logic [11:0]      byte_count;  // how many bytes are in this completion
+    logic [6:0]       lower_addr;  // byte alignment for MRd completions
+    logic             has_data;    // 1 = CplD, 0 = Cpl
+    logic [127:0]     data;        // payload (valid only if has_data=1)
+    logic             sop;         // start of packet
+    logic             eop;         // end of packet
+    logic [15:0]      be;          // byte enables for payload
+} cpl_rx_t;
 
 
 

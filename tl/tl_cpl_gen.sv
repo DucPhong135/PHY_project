@@ -216,7 +216,7 @@ always_ff @(posedge clk or negedge rst_n) begin
         else
           cpl_hdr_o[127:120] <= 8'h0A; // CPL
           cpl_hdr_o[119:112] <= 8'h00; // Traffic Class 0, No Attributes
-          cpl_hdr_o[111] <= 1'b1; // TD
+          cpl_hdr_o[111] <= 1'b0; // TD
           cpl_hdr_o[110] <= 1'b0; // EP
           cpl_hdr_o[109:106] <= 4'b0000; //Attr and AT bits
         if(cpl_cmd_reg.has_data)
@@ -228,8 +228,8 @@ always_ff @(posedge clk or negedge rst_n) begin
           cpl_hdr_o[76] <= 1'b0; // BCM
           if(cpl_cmd_reg.has_data)
             cpl_hdr_o[75:64] <= cpl_cmd_reg.byte_count; // Byte Count
-          else b
-            cpl_hdr_o[75:64] <= 12'h4; // Byte Count 0 for CPL
+          else
+            cpl_hdr_o[75:64] <= 12'h4; // Byte Count 4 for CPL
           cpl_hdr_o[63:48] <= cpl_cmd_reg.requester_id; // Requester ID from command
           cpl_hdr_o[47:40] <= cpl_cmd_reg.tag; // Tag from command
         if(cpl_cmd_reg.has_data)
@@ -242,7 +242,7 @@ always_ff @(posedge clk or negedge rst_n) begin
       // Unsupported Completion Status - UR
           cpl_hdr_o[127:120] <= 8'h0A; // CPL
           cpl_hdr_o[119:112] <= 8'h00; // Traffic Class 0, No Attributes
-          cpl_hdr_o[111] <= 1'b1; // TD
+          cpl_hdr_o[111] <= 1'b0; // TD
           cpl_hdr_o[110] <= 1'b0; // EP
           cpl_hdr_o[109:106] <= 4'b0000; //Attr and AT bits
           cpl_hdr_o[105:96] <= 10'd0; // Length 0 for CPL
@@ -263,10 +263,10 @@ always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         cpl_hdr_valid_o <= 1'b0;
     end else begin
-        if(cpl_hdr_valid_o == 1'b1) 
+        if(cpl_hdr_valid_o == 1'b1 && cpl_hdr_ready_i == 1'b1) 
             cpl_hdr_valid_o <= 1'b0; // de-assert after one cycle
         else if (fsm_state == FSM_SEND_HDR) begin
-                if (cpl_hdr_ready_i && credit_ok_i) 
+                if (credit_ok_i) 
                     cpl_hdr_valid_o <= 1'b1;
                 else 
                     cpl_hdr_valid_o <= 1'b0;
@@ -282,10 +282,10 @@ always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         cpl_data_valid_o <= 1'b0;
     end else begin
-        if(cpl_data_valid_o == 1'b1) 
+        if(cpl_data_valid_o == 1'b1 && cpl_data_ready_i == 1'b1) 
             cpl_data_valid_o <= 1'b0; // de-assert after one cycle
         else if (fsm_state == FSM_SEND_DATA) begin
-                if (cpl_cmd_reg.has_data && credit_data_ok_i && cpl_data_ready_i) 
+                if (cpl_cmd_reg.has_data && credit_data_ok_i) 
                     cpl_data_valid_o <= 1'b1;
                 else 
                     cpl_data_valid_o <= 1'b0;
