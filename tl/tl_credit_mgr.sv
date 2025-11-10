@@ -81,7 +81,7 @@ always_ff @(posedge clk or negedge rst_n) begin
                 pd_avail <= {PD_WIDTH{1'b1}}; // saturate
             end
             else
-            pd_avail <= pd_avail + fc_update_i.pd_credits;
+                pd_avail <= pd_avail + fc_update_i.pd_credits;
         end
         if(pd_consume_v_i && pd_credit_ok_o) begin
             pd_avail <= pd_avail - pd_consume_dw_i;

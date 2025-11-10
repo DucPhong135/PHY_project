@@ -12,12 +12,6 @@ package tl_pkg;
   } tl_stream_t;
 
 
-  typedef struct packed {
-    logic [1:0]  hdr_dw;    // 3 or 4 DW
-    logic [11:0] data_dw;   // payload length in DW
-    logic        has_data;  // 1 = TLP has data
-  } tl_meta_t;
-
 
 
   //----------------------------------------------------------------
@@ -90,6 +84,8 @@ typedef struct packed {
   logic [6:0]  lower_addr;
   tl_cpl_status_e  cpl_status; // SC=0, UR=1
   logic        has_data;   // 1 = CplD, 0 = Cpl
+  logic [3:0]  first_be;         // byte enables for payload
+  logic [3:0]  last_be;          // byte enables for payload
   logic [255:0] data;      // completion payload (optional)
 } cpl_gen_cmd_t;
 
