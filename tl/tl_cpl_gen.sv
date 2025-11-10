@@ -40,8 +40,8 @@ fsm_state_t fsm_state, fsm_next;
 tl_pkg::cpl_gen_cmd_t cpl_cmd_reg;
 
 // Beat counter for multi-beat data transfers
-logic [3:0] beat_count;
-logic [3:0] total_beats;
+logic [7:0] beat_count;  // Extended to 8 bits to support up to 255 beats
+logic [7:0] total_beats; // Extended to 8 bits for max payload support
 
 // Internal header register
 logic [127:0] cpl_hdr_reg;
@@ -198,7 +198,7 @@ end
 always_ff @(posedge clk or negedge rst_n) begin
   if (!rst_n) begin
     cpl_cmd_reg <= '0;
-    total_beats <= 4'd0;
+    total_beats <= 8'd0;
   end else begin
     if (cpl_cmd_valid_i && cpl_cmd_ready_o) begin
       cpl_cmd_reg <= cpl_cmd_i;
@@ -208,10 +208,10 @@ always_ff @(posedge clk or negedge rst_n) begin
       if(cpl_cmd_i.has_data && cpl_cmd_i.byte_count > 4) begin
         // Calculate additional beats needed for remaining data
         // After packing first DW with header, remaining bytes need ceil((byte_count-4)/16)
-        total_beats <= (cpl_cmd_i.byte_count - 4 + 12'd15) >> 4;  // Divide by 16
+        total_beats <= ((cpl_cmd_i.byte_count - 12'd4 + 12'd15) >> 4);  // Divide by 16, ceiling
       end
       else begin
-        total_beats <= 4'd0;  // No additional data beats needed
+        total_beats <= 8'd0;  // No additional data beats needed
       end
     end
   end
@@ -220,18 +220,19 @@ end
 // Beat counter - tracks current beat being sent
 always_ff @(posedge clk or negedge rst_n) begin
   if (!rst_n) begin
-    beat_count <= 4'd0;
+    beat_count <= 8'd0;
   end else begin
     if (fsm_state == FSM_IDLE) begin
-      beat_count <= 4'd0;  // Reset on IDLE
+      beat_count <= 8'd0;  // Reset on IDLE
     end
     else if (fsm_state == FSM_SEND_DATA && cpl_pkt_valid_o && cpl_pkt_ready_i) begin
-      beat_count <= beat_count + 4'd1;  // Increment on each successful transfer
+      beat_count <= beat_count + 8'd1;  // Increment on each successful transfer
     end
   end
 end
 
-logic [9:0] DW_count = cpl_cmd_reg.byte_count >> 2;
+// Calculate DW count with ceiling (round up)
+logic [9:0] DW_count = (cpl_cmd_reg.byte_count + 12'd3) >> 2;
 
 // Header Generation Logic
 always_ff @(posedge clk or negedge rst_n) begin
@@ -241,63 +242,68 @@ always_ff @(posedge clk or negedge rst_n) begin
     if(fsm_state == FSM_GEN_HDR) begin
       // Common fields for both CPL and CPLD
       if(cpl_cmd_reg.cpl_status == 3'd0) begin
-        if(cpl_cmd_reg.has_data)
-          cpl_hdr_reg[7:0] <= 8'h4A; // CPLD
-        else
-          cpl_hdr_reg[7:0] <= 8'h0A; // CPL
-          cpl_hdr_reg[15:8] <= 8'h00; // Traffic Class 0, No Attributes
-          cpl_hdr_reg[23:16] <= {6'b0, DW_count[9:8]}; // Length MSBs
-          cpl_hdr_reg[31:24] <= DW_count[7:0]; // Length LSBs
-          cpl_hdr_reg[39:32] <= requester_id_i[15:8]; // Completer ID from command
-          cpl_hdr_reg[47:40] <= requester_id_i[7:0]; // Completer ID from command
-          cpl_hdr_reg[55:53] <= cpl_cmd_reg.cpl_status; // Completion Status
-          cpl_hdr_reg[52] <= 1'b0; // BCM
-          cpl_hdr_reg[51:48] <= cpl_cmd_reg.byte_count[11:8]; // Byte Count MSBs
-          cpl_hdr_reg[63:56] <= cpl_cmd_reg.byte_count[7:0]; // Byte Count LSBs
-          cpl_hdr_reg[71:64] <= cpl_cmd_reg.requester_id[15:8]; // Requester ID from command
-          cpl_hdr_reg[79:72] <= cpl_cmd_reg.requester_id[7:0]; // Requester ID from command
-          cpl_hdr_reg[87:80] <= cpl_cmd_reg.tag; // Tag from command
-          cpl_hdr_reg[94:88] <= cpl_cmd_reg.lower_addr; // Lower Address from command
-          cpl_hdr_reg[95] <= 1'b0; // Reserved
-          cpl_hdr_reg[127:96] <= 32'h0000_0000; // Reserved
+        // Set format field based on whether completion has data
+        if(cpl_cmd_reg.has_data) begin
+          cpl_hdr_reg[7:0] <= 8'h4A; // CPLD (Completion with Data)
+        end else begin
+          cpl_hdr_reg[7:0] <= 8'h0A; // CPL (Completion without Data)
         end
+        
+        // Common header fields
+        cpl_hdr_reg[15:8] <= 8'h00; // Traffic Class 0, No Attributes
+        cpl_hdr_reg[23:16] <= {6'b0, DW_count[9:8]}; // Length MSBs
+        cpl_hdr_reg[31:24] <= DW_count[7:0]; // Length LSBs
+        cpl_hdr_reg[39:32] <= requester_id_i[15:8]; // Completer ID from command
+        cpl_hdr_reg[47:40] <= requester_id_i[7:0]; // Completer ID from command
+        cpl_hdr_reg[55:53] <= cpl_cmd_reg.cpl_status; // Completion Status
+        cpl_hdr_reg[52] <= 1'b0; // BCM
+        cpl_hdr_reg[51:48] <= cpl_cmd_reg.byte_count[11:8]; // Byte Count MSBs
+        cpl_hdr_reg[63:56] <= cpl_cmd_reg.byte_count[7:0]; // Byte Count LSBs
+        cpl_hdr_reg[71:64] <= cpl_cmd_reg.requester_id[15:8]; // Requester ID from command
+        cpl_hdr_reg[79:72] <= cpl_cmd_reg.requester_id[7:0]; // Requester ID from command
+        cpl_hdr_reg[87:80] <= cpl_cmd_reg.tag; // Tag from command
+        cpl_hdr_reg[94:88] <= cpl_cmd_reg.lower_addr; // Lower Address from command
+        cpl_hdr_reg[95] <= 1'b0; // Reserved
+        cpl_hdr_reg[127:96] <= 32'h0000_0000; // Reserved
+      end
     else if(cpl_cmd_reg.cpl_status == 3'd1) begin
-      // Unsupported Completion Status - UR
-          cpl_hdr_reg[7:0] <= 8'h0A; // CPL
-          cpl_hdr_reg[15:8] <= 8'h00; // Traffic Class 0, No Attributes
-          cpl_hdr_reg[23:16] <= {6'b0, DW_count[9:8]}; // Length MSBs
-          cpl_hdr_reg[31:24] <= DW_count[7:0]; // Length LSBs
-          cpl_hdr_reg[39:32] <= requester_id_i[15:8]; // Completer ID from command
-          cpl_hdr_reg[47:40] <= requester_id_i[7:0]; // Completer ID from command
-          cpl_hdr_reg[55:53] <= cpl_cmd_reg.cpl_status; // Completion Status
-          cpl_hdr_reg[52] <= 1'b0; // BCM
-          cpl_hdr_reg[51:48] <= cpl_cmd_reg.byte_count[11:8]; // Byte Count MSBs
-          cpl_hdr_reg[63:56] <= cpl_cmd_reg.byte_count[7:0]; // Byte Count LSBs
-          cpl_hdr_reg[71:64] <= cpl_cmd_reg.requester_id[15:8]; // Requester ID from command
-          cpl_hdr_reg[79:72] <= cpl_cmd_reg.requester_id[7:0]; // Requester ID from command
-          cpl_hdr_reg[87:80] <= cpl_cmd_reg.tag; // Tag from command
-          cpl_hdr_reg[94:88] <= cpl_cmd_reg.lower_addr; // Lower Address from command
-          cpl_hdr_reg[95] <= 1'b0; // Reserved
-          cpl_hdr_reg[127:96] <= 32'h0000_0000; // Reserved
-      end
-      else if(cpl_cmd_reg.cpl_status == 3'd2) begin
-          cpl_hdr_reg[7:0] <= 8'h0A; // CPL
-          cpl_hdr_reg[15:8] <= 8'h00; // Traffic Class 0, No Attributes
-          cpl_hdr_reg[23:16] <= {6'b0, DW_count[9:8]}; // Length MSBs
-          cpl_hdr_reg[31:24] <= DW_count[7:0]; // Length LSBs
-          cpl_hdr_reg[39:32] <= requester_id_i[15:8]; // Completer ID from command
-          cpl_hdr_reg[47:40] <= requester_id_i[7:0]; // Completer ID from command
-          cpl_hdr_reg[55:53] <= cpl_cmd_reg.cpl_status; // Completion Status
-          cpl_hdr_reg[52] <= 1'b0; // BCM
-          cpl_hdr_reg[51:48] <= cpl_cmd_reg.byte_count[11:8]; // Byte Count MSBs
-          cpl_hdr_reg[63:56] <= cpl_cmd_reg.byte_count[7:0]; // Byte Count LSBs
-          cpl_hdr_reg[71:64] <= cpl_cmd_reg.requester_id[15:8]; // Requester ID from command
-          cpl_hdr_reg[79:72] <= cpl_cmd_reg.requester_id[7:0]; // Requester ID from command
-          cpl_hdr_reg[87:80] <= cpl_cmd_reg.tag; // Tag from command
-          cpl_hdr_reg[94:88] <= cpl_cmd_reg.lower_addr; // Lower Address from command
-          cpl_hdr_reg[95] <= 1'b0; // Reserved
-          cpl_hdr_reg[127:96] <= 32'h0000_0000; // Reserved
-      end
+      // Unsupported Completion Status - UR (always without data)
+      cpl_hdr_reg[7:0] <= 8'h0A; // CPL
+      cpl_hdr_reg[15:8] <= 8'h00; // Traffic Class 0, No Attributes
+      cpl_hdr_reg[23:16] <= {6'b0, DW_count[9:8]}; // Length MSBs
+      cpl_hdr_reg[31:24] <= DW_count[7:0]; // Length LSBs
+      cpl_hdr_reg[39:32] <= requester_id_i[15:8]; // Completer ID from command
+      cpl_hdr_reg[47:40] <= requester_id_i[7:0]; // Completer ID from command
+      cpl_hdr_reg[55:53] <= cpl_cmd_reg.cpl_status; // Completion Status
+      cpl_hdr_reg[52] <= 1'b0; // BCM
+      cpl_hdr_reg[51:48] <= cpl_cmd_reg.byte_count[11:8]; // Byte Count MSBs
+      cpl_hdr_reg[63:56] <= cpl_cmd_reg.byte_count[7:0]; // Byte Count LSBs
+      cpl_hdr_reg[71:64] <= cpl_cmd_reg.requester_id[15:8]; // Requester ID from command
+      cpl_hdr_reg[79:72] <= cpl_cmd_reg.requester_id[7:0]; // Requester ID from command
+      cpl_hdr_reg[87:80] <= cpl_cmd_reg.tag; // Tag from command
+      cpl_hdr_reg[94:88] <= cpl_cmd_reg.lower_addr; // Lower Address from command
+      cpl_hdr_reg[95] <= 1'b0; // Reserved
+      cpl_hdr_reg[127:96] <= 32'h0000_0000; // Reserved
+    end
+    else if(cpl_cmd_reg.cpl_status == 3'd2) begin
+      // Configuration Request Retry Status - CRS (always without data)
+      cpl_hdr_reg[7:0] <= 8'h0A; // CPL
+      cpl_hdr_reg[15:8] <= 8'h00; // Traffic Class 0, No Attributes
+      cpl_hdr_reg[23:16] <= {6'b0, DW_count[9:8]}; // Length MSBs
+      cpl_hdr_reg[31:24] <= DW_count[7:0]; // Length LSBs
+      cpl_hdr_reg[39:32] <= requester_id_i[15:8]; // Completer ID from command
+      cpl_hdr_reg[47:40] <= requester_id_i[7:0]; // Completer ID from command
+      cpl_hdr_reg[55:53] <= cpl_cmd_reg.cpl_status; // Completion Status
+      cpl_hdr_reg[52] <= 1'b0; // BCM
+      cpl_hdr_reg[51:48] <= cpl_cmd_reg.byte_count[11:8]; // Byte Count MSBs
+      cpl_hdr_reg[63:56] <= cpl_cmd_reg.byte_count[7:0]; // Byte Count LSBs
+      cpl_hdr_reg[71:64] <= cpl_cmd_reg.requester_id[15:8]; // Requester ID from command
+      cpl_hdr_reg[79:72] <= cpl_cmd_reg.requester_id[7:0]; // Requester ID from command
+      cpl_hdr_reg[87:80] <= cpl_cmd_reg.tag; // Tag from command
+      cpl_hdr_reg[94:88] <= cpl_cmd_reg.lower_addr; // Lower Address from command
+      cpl_hdr_reg[95] <= 1'b0; // Reserved
+      cpl_hdr_reg[127:96] <= 32'h0000_0000; // Reserved
+    end
     end
   end
 end
@@ -326,7 +332,7 @@ always_comb begin
         cpl_pkt_o.data[127:96] = 32'h0;
         cpl_pkt_o.sop = 1'b1;
         cpl_pkt_o.eop = 1'b1;  // Header-only completion
-        cpl_pkt_o.be = 4'b0111;  // Only lower 3 DWs valid (12 bytes)
+        cpl_pkt_o.be = 4'hF;  // All 4 DWs valid (header is 3DW, but aligned in 4DW beat)
         cpl_pkt_o.is_dllp = 1'b0;
       end
     end
@@ -367,29 +373,21 @@ always_comb begin
   endcase
 end
 
-// Valid output
-always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-        cpl_pkt_valid_o <= 1'b0;
+// Valid output - combinational, waits for ready to be high
+always_comb begin
+  cpl_pkt_valid_o = 1'b0;
+  
+  if (fsm_state == FSM_SEND_HDR) begin
+    // Header beat is valid when ready is high AND credits are available
+    if (cpl_cmd_reg.has_data) begin
+      cpl_pkt_valid_o = cpl_pkt_ready_i && credit_hdr_ok_i && credit_data_ok_i;
     end else begin
-        if(cpl_pkt_valid_o && cpl_pkt_ready_i) begin
-            cpl_pkt_valid_o <= 1'b0; // Deassert after handshake
-        end
-        else if (fsm_state == FSM_SEND_HDR) begin
-            if (credit_hdr_ok_i) 
-                cpl_pkt_valid_o <= 1'b1;
-            else 
-                cpl_pkt_valid_o <= 1'b0;
-        end
-        else if (fsm_state == FSM_SEND_DATA) begin
-            if (cpl_cmd_reg.has_data && credit_data_ok_i) 
-                cpl_pkt_valid_o <= 1'b1;
-            else 
-                cpl_pkt_valid_o <= 1'b0;
-        end
-        else begin
-            cpl_pkt_valid_o <= 1'b0;
-        end
+      cpl_pkt_valid_o = cpl_pkt_ready_i && credit_hdr_ok_i;
     end
+  end
+  else if (fsm_state == FSM_SEND_DATA) begin
+    // Data beats are valid when ready is high AND data credits available
+    cpl_pkt_valid_o = cpl_pkt_ready_i && credit_data_ok_i;
+  end
 end
 endmodule

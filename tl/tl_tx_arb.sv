@@ -214,10 +214,10 @@ end
 always_comb begin
   case(fsm_state)
     IDLE: begin
-      // In IDLE, ready to accept new packets if downstream is ready
-      pkt_posted_ready_o = tl_tx_ready_i && posted_eligible;
-      pkt_np_ready_o     = tl_tx_ready_i && np_eligible;
-      pkt_cpl_ready_o    = tl_tx_ready_i && cpl_eligible;
+      // In IDLE, ready to accept new packets from all sources (priority will select one)
+      pkt_posted_ready_o = tl_tx_ready_i;
+      pkt_np_ready_o     = tl_tx_ready_i;
+      pkt_cpl_ready_o    = tl_tx_ready_i;
     end
     HDR, DATA: begin
       // During transmission, only the granted source gets ready signal
@@ -234,14 +234,14 @@ always_comb begin
 end
 
 
-// Combinational valid output - asserts when we have valid data to transmit
+// Combinational valid output - independent of ready (standard handshake)
 always_comb begin
   case(fsm_state)
     IDLE: begin
       tl_tx_valid_o = 1'b0;
     end
     HDR: begin
-      // Valid when we have a valid packet from the granted source AND downstream is ready
+      // Valid when we have a valid packet from the granted source
       case(grant_state)
         GRANT_CPL: tl_tx_valid_o = pkt_cpl_valid_i && tl_tx_ready_i;
         GRANT_NP:  tl_tx_valid_o = pkt_np_valid_i && tl_tx_ready_i;
@@ -250,7 +250,7 @@ always_comb begin
       endcase
     end
     DATA: begin
-      // Valid when we have valid data from the granted source AND downstream is ready
+      // Valid when we have valid data from the granted source
       case(grant_state)
         GRANT_CPL: tl_tx_valid_o = pkt_cpl_valid_i && tl_tx_ready_i;
         GRANT_NP:  tl_tx_valid_o = pkt_np_valid_i && tl_tx_ready_i;
@@ -357,11 +357,11 @@ always_ff @(posedge clk or negedge rst_n) begin
     nph_consume_v_o  <= 1'b0;
     nph_consume_dw_o <= '0;
     npd_consume_v_o  <= 1'b0;
-    npd_consume_dw_o <= '0';
+    npd_consume_dw_o <= '0;
     cplh_consume_v_o <= 1'b0;
-    cplh_consume_dw_o<= '0';
+    cplh_consume_dw_o<= '0;
     cpld_consume_v_o <= 1'b0;
-    cpld_consume_dw_o<= '0';
+    cpld_consume_dw_o<= '0;
   end
   else begin
     // Default to no consumption
@@ -372,11 +372,11 @@ always_ff @(posedge clk or negedge rst_n) begin
     nph_consume_v_o  <= 1'b0;
     nph_consume_dw_o <= '0;
     npd_consume_v_o  <= 1'b0;
-    npd_consume_dw_o <= '0';
+    npd_consume_dw_o <= '0;
     cplh_consume_v_o <= 1'b0;
-    cplh_consume_dw_o<= '0';
+    cplh_consume_dw_o<= '0;
     cpld_consume_v_o <= 1'b0;
-    cpld_consume_dw_o<= '0';
+    cpld_consume_dw_o<= '0;
 
     if(fsm_state == HDR && tl_tx_ready_i) begin
       case(grant_state)

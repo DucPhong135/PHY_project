@@ -17,8 +17,7 @@ module tl_rx_parser #(
   // Forward completion info to completion engine
   output tl_pkg::cpl_rx_t        cpl_o,
   output logic                   cpl_valid_o,
-  input  logic                   cpl_ready_i
-
+  input  logic                   cpl_ready_i,
 
   // -> to completion generator (for MRd/CfgRd received)
   output tl_pkg::cpl_gen_cmd_t cpl_cmd_o,
@@ -56,7 +55,6 @@ typedef enum logic [2:0] {
 
   // ========== Registers ==========
   state_e fsm_state, fsm_next;
-  pkt_type_e pkt_type, pkt_type_reg;
   
   logic [127:0] hdr_reg;           // ← LATCHED header (stable)
   pkt_type_e pkt_type_reg;         // ← DECODED type (stable)
@@ -68,6 +66,12 @@ typedef enum logic [2:0] {
   // Temporary decode signals (combinational, used only in ST_DECODE_HDR)
   pkt_type_e pkt_type_decode;
   logic is_4dw_hdr_decode;
+
+  // Byte enable signals
+  logic [3:0] first_be;
+  logic [3:0] last_be;
+  logic [2:0] byte_en_first;
+  logic [2:0] byte_en_last;
 
   // Extract BE from header
 assign first_be = hdr_reg[59:56];
@@ -129,8 +133,7 @@ assign last_be  = hdr_reg[63:60];
         default: pkt_type_reg <= TL_OTHERS;
       endcase
       
-      // Extract Length field (10 bits from Bytes 2-3)
-      length_dw_reg    <= {tl_rx_i.data[25:16], tl_rx_i.data[31:28]};
+      length_dw_reg    <= {tl_rx_i.data[17:16], tl_rx_i.data[31:24]};  // Corrected bits [9:0]
       dw_count         <= '0;
       is_first_data_beat <= 1'b1;
       
@@ -381,11 +384,11 @@ always_comb begin
     cpl_o.completer_id = {hdr_reg[39:32], hdr_reg[47:40]};
     cpl_o.requester_id = {hdr_reg[71:64], hdr_reg[79:72]};
     cpl_o.tag          = hdr_reg[87:80];
-    cpl_o.status       = hdr_reg[50:48];
-    cpl_o.byte_count   = {hdr_reg[55:52], hdr_reg[63:56]};
-    cpl_lower_addr     = hdr_reg[94:88];
+    cpl_o.status       = hdr_reg[55:53];
+    cpl_o.byte_count   = {hdr_reg[51:48], hdr_reg[63:56]};
+    cpl_o.lower_addr   = hdr_reg[94:88];
     cpl_o.has_data     = (pkt_type_reg == TL_CPLD) ? 1'b1 : 1'b0;
-    cpl_o.be           = (pkt_type_reg == TL_CPLD) ? {first_be : 12'hFFF} : 16'hFFFF; // Full beat if no data
+    cpl_o.be           = (pkt_type_reg == TL_CPLD) ? {12'hFFF, first_be} : 16'hFFFF; // Full beat if no data
     cpl_o.data         = (pkt_type_reg == TL_CPLD) ? hdr_reg[127:96] : 32'd0;
     if(cpl_ready_i) begin
       cpl_valid_o = 1'b1;

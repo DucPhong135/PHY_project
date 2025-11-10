@@ -134,7 +134,6 @@ module tl_tx_queue_router
       end
       
       QUEUE_NONE: begin
-        // ✅ When no valid queue selected, ready to accept new packet
         pkt_ready_o      = 1'b1;
       end
     endcase
