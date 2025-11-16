@@ -62,6 +62,10 @@ typedef enum logic [2:0] {
   logic [9:0] length_dw_reg;       // ← Payload length (stable)
   logic [11:0] dw_count;
   logic is_first_data_beat;
+  
+  // Buffer for 3DW header's first DW (for alignment)
+  logic [31:0] buffered_dw;        // Holds sliding DW for 3DW alignment
+  logic buffered_dw_valid;         // Indicates buffered_dw contains valid data
 
   // Temporary decode signals (combinational, used only in ST_DECODE_HDR)
   pkt_type_e pkt_type_decode;
@@ -94,6 +98,8 @@ assign last_be  = hdr_reg[63:60];
       length_dw_reg    <= '0;
       dw_count         <= '0;
       is_first_data_beat <= 1'b0;
+      buffered_dw      <= '0;
+      buffered_dw_valid <= 1'b0;
     end else if (fsm_state == ST_IDLE && tl_rx_valid_i && tl_rx_i.sop) begin
       // Latch incoming header
       hdr_reg <= tl_rx_i.data;
@@ -136,10 +142,14 @@ assign last_be  = hdr_reg[63:60];
       length_dw_reg    <= {tl_rx_i.data[17:16], tl_rx_i.data[31:24]};  // Corrected bits [9:0]
       dw_count         <= '0;
       is_first_data_beat <= 1'b1;
+      buffered_dw      <= '0;
+      buffered_dw_valid <= 1'b0;
       
       end else if (fsm_state == ST_ROUTE_PKT) begin
-        // For 3DW writes, first DW consumed from header
-        if (pkt_type_reg == TL_MWR && !is_4dw_hdr_reg) begin
+        // For 3DW writes, buffer first DW from header for alignment
+        if (pkt_type_reg == TL_MWR && !is_4dw_hdr_reg && memwr_ready_i) begin
+          buffered_dw <= hdr_reg[127:96];  // Buffer first DW
+          buffered_dw_valid <= 1'b1;
           dw_count <= 12'd1;  // First DW accounted for
         end else if (pkt_type_reg == TL_CPLD) begin
           dw_count <= 12'd1;  // First DW in header for 3DW CplD
@@ -148,6 +158,17 @@ assign last_be  = hdr_reg[63:60];
       end else if (fsm_state == ST_DATA_BEAT && tl_rx_valid_i && tl_rx_ready_o) begin
         dw_count <= dw_count + 12'd4;  // Each beat = 4 DWs
         is_first_data_beat <= 1'b0;
+        
+        // For 3DW MWr: Update sliding buffer with last DW from current beat
+        if (pkt_type_reg == TL_MWR && !is_4dw_hdr_reg && buffered_dw_valid) begin
+          if (!tl_rx_i.eop) begin
+            // Not last beat: Buffer the 4th DW for next beat
+            buffered_dw <= tl_rx_i.data[127:96];
+          end else begin
+            // Last beat: Clear buffer
+            buffered_dw_valid <= 1'b0;
+          end
+        end
       end
   end
 
@@ -179,14 +200,9 @@ assign last_be  = hdr_reg[63:60];
           TL_MWR: begin
             if (memwr_ready_i) begin
               if (!is_4dw_hdr_reg) begin
-                // 3DW: First DW in header beat [127:96]
-                if (length_dw_reg <= 10'd1) begin
-                  // Only 1 DW total → Done immediately
-                  fsm_next = ST_IDLE;
-                end else begin
-                  // More DWs coming → Go to DATA_BEAT for remaining payload
-                  fsm_next = ST_DATA_BEAT;
-                end
+                // 3DW: Buffer first DW, always go to DATA_BEAT to send aligned data
+                // Even if only 1 DW total, send it in DATA_BEAT for consistency
+                fsm_next = ST_DATA_BEAT;
               end else begin
                 // 4DW: No data in header beat
                 if (length_dw_reg == 10'd0) begin
@@ -297,27 +313,114 @@ always_comb begin
   memwr_o = '0;
   memwr_valid_o = 1'b0;
 
-  if(fsm_state == ST_ROUTE_PKT && pkt_type_reg == TL_MWR) begin
-    if(!is_4dw_hdr_reg) begin
-      // 3DW MWR: First DW in header
-      memwr_o.data = hdr_reg[127:96];
-      memwr_o.sop = 1'b1;
-      memwr_o.eop = (length_dw_reg == 10'd1) ? 1'b1 : 1'b0;
-      memwr_o.be = first_be;
-      memwr_valid_o = 1'b1;
+  if(fsm_state == ST_DATA_BEAT && pkt_type_reg == TL_MWR && tl_rx_valid_i) begin
+    
+    if(!is_4dw_hdr_reg && buffered_dw_valid) begin
+      // 3DW header case: Sliding window alignment
+      // Always combine buffered DW with lower 3 DWs from current beat
+      // Data layout: [buffered_dw, tl_rx_i.data[95:64], tl_rx_i.data[63:32], tl_rx_i.data[31:0]]
+      memwr_o.data = {tl_rx_i.data[95:0], buffered_dw};
+      
+      if(is_first_data_beat) begin
+        // First beat: Send address and mark SOP
+        memwr_o.addr = {32'h0, hdr_reg[95:64]};  // 32-bit address from header
+        memwr_o.sop = 1'b1;
+      end else begin
+        // Subsequent beats: No address, no SOP
+        memwr_o.addr = '0;
+        memwr_o.sop = 1'b0;
+      end
+      
+      // EOP handling:
+      // We need to check if the LAST DW of the TLP is in this output beat
+      // Since we're consuming 3 DWs from current beat (leaving 4th for next),
+      // EOP happens when tl_rx_i.eop AND we've sent all but the last buffered DW
+      // OR when length fits exactly in current output
+      
+      // Calculate how many DWs we've sent AFTER this beat
+      // Current output sends: buffered + 3 DWs from payload
+      // Total DWs output so far = dw_count + 3 (we consume 3 from current beat)
+      
+      if(tl_rx_i.eop) begin
+        // Input is ending - check if we have exactly the right amount
+        // dw_count already includes buffered DW (incremented in ST_ROUTE_PKT)
+        // After this beat: dw_count will be incremented by 4 (but we only use 3 here)
+        // So EOP if: dw_count + 3 >= length_dw_reg
+        memwr_o.eop = ((dw_count + 12'd3) >= {2'b0, length_dw_reg});
+      end else begin
+        memwr_o.eop = 1'b0;
+      end
+      
+      // Byte enables:
+      if(is_first_data_beat) begin
+        if(memwr_o.eop) begin
+          // First and last beat: Calculate BE based on total length
+          if(length_dw_reg == 10'd1) begin
+            // Only 1 DW (buffered) - shouldn't happen (would need payload)
+            memwr_o.be = {12'h0, first_be};
+          end else if(length_dw_reg == 10'd2) begin
+            // 2 DWs: buffered + DW1
+            memwr_o.be = {8'h0, last_be, first_be};
+          end else if(length_dw_reg == 10'd3) begin
+            // 3 DWs: buffered + DW1-2
+            memwr_o.be = {4'h0, last_be, 4'hF, first_be};
+          end else begin
+            // 4 DWs: buffered + DW1-3
+            memwr_o.be = {last_be, 4'hF, 4'hF, first_be};
+          end
+        end else begin
+          // First beat but not last: first_be for buffered DW, all enables for rest
+          memwr_o.be = {12'hFFF, first_be};
+        end
+      end else begin
+        // Not first beat
+        if(memwr_o.eop) begin
+          // Last beat: last_be applies to highest valid DW
+          // We're outputting buffered + 3 DWs
+          // Need to figure out which DW position gets last_be
+          logic [11:0] remaining_dws;
+          remaining_dws = {2'b0, length_dw_reg} - dw_count;
+          
+          if(remaining_dws == 12'd1) begin
+            memwr_o.be = {12'h0, last_be};  // Only buffered DW
+          end else if(remaining_dws == 12'd2) begin
+            memwr_o.be = {8'h0, last_be, 4'hF};  // buffered + 1 DW
+          end else if(remaining_dws == 12'd3) begin
+            memwr_o.be = {4'h0, last_be, 8'hFF};  // buffered + 2 DWs
+          end else begin
+            memwr_o.be = {last_be, 12'hFFF};  // buffered + 3 DWs
+          end
+        end else begin
+          // Middle beat: All bytes valid
+          memwr_o.be = 16'hFFFF;
+        end
+      end
+      
+    end else if(is_4dw_hdr_reg) begin
+      // 4DW header case: Normal data transfer from payload
+      memwr_o.data = tl_rx_i.data;
+      
+      if(is_first_data_beat) begin
+        // First data beat: Send address
+        memwr_o.addr = {hdr_reg[95:64], hdr_reg[127:96]};  // 64-bit address
+        memwr_o.sop = 1'b1;
+      end else begin
+        memwr_o.addr = '0;  // Address only in SOP
+        memwr_o.sop = 1'b0;
+      end
+      
+      memwr_o.eop = tl_rx_i.eop;
+      
+      if(tl_rx_i.eop) begin
+        memwr_o.be = {12'h0, last_be};  // Last beat uses last_be
+      end else if(is_first_data_beat) begin
+        memwr_o.be = {12'h0, first_be}; // First data beat uses first_be
+      end else begin
+        memwr_o.be = 16'hFFFF; // All bytes valid for middle beats
+      end
     end
-  end else if(fsm_state == ST_DATA_BEAT && pkt_type_reg == TL_MWR && tl_rx_valid_i) begin
-    memwr_o.data = tl_rx_i.data;
-    memwr_o.sop = 1'b0;
-    memwr_o.eop = tl_rx_i.eop;
-    if(tl_rx_i.eop) begin
-      memwr_o.be = last_be;
-    end else begin
-      memwr_o.be = 4'b1111; // All bytes valid for full beats
-    end
-    if(memwr_ready_i) begin
-      memwr_valid_o = 1'b1;
-    end
+    
+    memwr_valid_o = memwr_ready_i;  // Follow project convention
   end
 end
 
