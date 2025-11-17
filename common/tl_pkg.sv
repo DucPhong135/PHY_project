@@ -74,7 +74,6 @@ typedef struct packed {
 typedef enum logic [2:0] {
   CPL_SUCCESS = 3'd0, // Successful Completion
   CPL_UR      = 3'd1, // Unsupported Request
-  CPL_CA      = 3'd2  // Configuration Accessed
 } tl_cpl_status_e;
 
 typedef struct packed {

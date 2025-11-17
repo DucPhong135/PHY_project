@@ -456,6 +456,22 @@ always_comb begin
       cpl_cmd_valid_o = 1'b1;
     end
   end
+  else if(fsm_state == ST_ROUTE_PKT && pkt_type_reg == TL_OTHERS) begin
+    // Unsupported request: Return UR (Unsupported Request) completion
+    cpl_cmd_o.requester_id = {hdr_reg[39:32], hdr_reg[47:40]};
+    cpl_cmd_o.tag          = hdr_reg[55:48];
+    cpl_cmd_o.byte_count   = 12'd0;  // No data for UR
+    cpl_cmd_o.lower_addr   = 7'd0;
+    cpl_cmd_o.first_be     = first_be;
+    cpl_cmd_o.last_be      = last_be;
+    cpl_cmd_o.data         = '0;
+    cpl_cmd_o.has_data     = 1'b0;
+    cpl_cmd_o.cpl_status   = tl_pkg::CPL_UR;  // Unsupported Request
+    
+    if(cpl_cmd_ready_i) begin
+      cpl_cmd_valid_o = 1'b1;
+    end
+  end
 end
 
 // ========== Config Request Output (ALREADY CORRECT) ==========
