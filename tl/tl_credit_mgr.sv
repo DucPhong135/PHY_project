@@ -1,4 +1,6 @@
-module tl_credit_mgr #(
+module tl_credit_mgr 
+import tl_pkg::*;
+#(
   parameter int PH_WIDTH   = 8,
   parameter int PD_WIDTH   = 12,
   parameter int NPH_WIDTH  = 8,
@@ -12,7 +14,7 @@ module tl_credit_mgr #(
   input  logic             rst_n,
 
   // ---------------- Increment side (Flow-Control DLLP parser) --------------
-  input  tl_pkg::tl_credit_t fc_update_i,
+  input  tl_credit_t         fc_update_i,
   input  logic               fc_valid_i,
 
   // ---------------- Decrement pulses from TX engines -----------------------

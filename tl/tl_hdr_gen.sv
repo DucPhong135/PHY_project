@@ -23,6 +23,12 @@ import tl_pkg::*;
   input  logic                   tag_valid_i,
   output logic                   tag_consume_o,
 
+  output logic [31:0]            tag_addr_o,  // Address associated with tag
+  output logic [9:0]             tag_len_o,   // Length in DWs associated with tag
+  output logic [2:0]             tag_attr_o,  // Attributes associated with tag
+
+
+
 // ---------------- Credit-manager interface ------------
   // Availability
   input  logic                   ph_credit_ok_i,
@@ -34,7 +40,6 @@ import tl_pkg::*;
   output logic [127:0]           hdr_o,
   output logic                   hdr_valid_o,
   input  logic                   hdr_ready_i
-
 );
   // FSM states
 typedef enum logic [2:0] {
@@ -50,7 +55,7 @@ typedef enum logic [2:0] {
 
   logic [2:0] fsm_state, fsm_next;
   logic [TAG_W-1:0] cmd_tag_reg;
-  tl_pkg::tl_cmd_t cmd_reg;
+  tl_cmd_t cmd_reg;
 
 always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -69,7 +74,7 @@ always_comb begin
             end
         end
         FSM_DECODE: begin
-            if (cmd_i.type == tl_pkg::tl_cmd_type_e'('CMD_MEM) || cmd_i.type == tl_pkg::tl_cmd_type_e'('CMD_CFG)) begin
+            if (cmd_i.type_cmd == CMD_MEM || cmd_i.type_cmd == CMD_CFG) begin
                 fsm_next = FSM_WAIT_TAG;
             end else begin
                 fsm_next = FSM_UNSUPPORTED; // Unsupported command type
@@ -83,8 +88,8 @@ always_comb begin
             end
         end
         FSM_GEN_HDR: begin
-            case (cmd_reg.type)
-                tl_pkg::tl_cmd_type_e'('CMD_MEM): begin
+            case (cmd_reg.type_cmd)
+                CMD_MEM: begin
                     if(cmd_reg.wr_en && hdr_ready_i) begin
                         if (ph_credit_ok_i && pd_credit_ok_i) begin
                             fsm_next = FSM_SEND_HDR; // For write, go back to IDLE after sending header
@@ -102,7 +107,7 @@ always_comb begin
                         fsm_next = FSM_GEN_HDR; // wait until credits are available
                     end
                 end
-                tl_pkg::tl_cmd_type_e'('CMD_CFG): begin
+                CMD_CFG: begin
                     if(cmd_reg.wr_en && hdr_ready_i) begin
                         if (nph_credit_ok_i && npd_credit_ok_i) begin
                             fsm_next = FSM_SEND_HDR; // For write, go back to IDLE after sending header
@@ -116,14 +121,16 @@ always_comb begin
                         end else begin
                             fsm_next = FSM_WAIT_CRED; // wait until credits are available
                         end
-                    else fsm_next = FSM_GEN_HDR; // wait until credits are available
+                    end
+                    else begin
+                        fsm_next = FSM_GEN_HDR; // wait until credits are available
                     end
                 end
             endcase
         end
         FSM_WAIT_CRED: begin
-            case (cmd_reg.type)
-                tl_pkg::tl_cmd_type_e'('CMD_MEM): begin
+            case (cmd_reg.type_cmd)
+                CMD_MEM: begin
                     if(cmd_reg.wr_en && hdr_ready_i) begin
                         if (ph_credit_ok_i && pd_credit_ok_i) begin
                             fsm_next = FSM_SEND_HDR; // For write, go back to IDLE after sending header
@@ -140,7 +147,7 @@ always_comb begin
                         fsm_next = FSM_WAIT_CRED; // wait until credits are available
                     end
                 end
-                tl_pkg::tl_cmd_type_e'('CMD_CFG): begin
+                CMD_CFG: begin
                     if(cmd_reg.wr_en && hdr_ready_i) begin
                         if (nph_credit_ok_i && npd_credit_ok_i) begin
                             fsm_next = FSM_SEND_HDR; // For write, go back to IDLE after sending header
@@ -163,8 +170,8 @@ always_comb begin
             endcase
         end
         FSM_SEND_HDR: begin
-            case (cmd_reg.type)
-                tl_pkg::tl_cmd_type_e'('CMD_MEM): begin
+            case (cmd_reg.type_cmd)
+                CMD_MEM: begin
                     if(cmd_reg.wr_en && hdr_ready_i) begin
                         if (ph_credit_ok_i && pd_credit_ok_i) begin
                             fsm_next = FSM_IDLE; // For write, go back to IDLE after sending header
@@ -181,7 +188,7 @@ always_comb begin
                         fsm_next = FSM_SEND_HDR; 
                     end
                 end
-                tl_pkg::tl_cmd_type_e'('CMD_CFG): begin
+                CMD_CFG: begin
                    if(cmd_reg.wr_en && hdr_ready_i) begin
                         if (nph_credit_ok_i && npd_credit_ok_i) begin
                             fsm_next = FSM_IDLE; // For write, go back to IDLE after sending header
@@ -246,14 +253,28 @@ always_ff @(posedge clk or negedge rst_n) begin
 end
 
 
-always_ff @(posedge clk or negedge rst_n) begin
+always_comb begin
     if (!rst_n) begin
         tag_consume_o <= 1'b0;
     end else begin
         if (fsm_state == FSM_WAIT_TAG && tag_valid_i) begin
-            tag_consume_o <= 1'b1;
+            tag_consume_o = 1'b1;
         end else begin
-            tag_consume_o <= 1'b0;
+            tag_consume_o = 1'b0;
+        end
+    end
+end
+
+always_comb begin
+    if (!rst_n) begin
+        tag_addr_o = '0;
+        tag_len_o  = '0;
+        tag_attr_o = '0;
+    end else begin
+        if (fsm_state == FSM_WAIT_TAG && tag_valid_i) begin
+            tag_addr_o = cmd_reg.addr;
+            tag_len_o  = cmd_reg.len;
+            tag_attr_o = 2'b00; // Default attributes, can be extended
         end
     end
 end
@@ -269,13 +290,14 @@ always_ff @(posedge clk or negedge rst_n) begin
 end
 
 
+
 always_ff @(posedge clk or negedge rst_n) begin
     hdr_o <= hdr_o; // default hold value
     if(!rst_n) begin
         hdr_o = '0;
     end
     else if(fsm_state == FSM_GEN_HDR) begin
-        if(cmd_reg.type == tl_pkg::tl_cmd_type_e'('CMD_MEM)) begin
+        if(cmd_reg.type_cmd == CMD_MEM) begin
             if(cmd_reg.addr[63:32] != 32'h0) begin
                 // 64-bit address
                 if(cmd_reg.wr_en == 1'b1) begin
@@ -374,7 +396,7 @@ always_ff @(posedge clk or negedge rst_n) begin
                 end
             end
         end
-        else if(cmd_reg.type == tl_pkg::tl_cmd_type_e'('CMD_CFG)) begin
+        else if(cmd_reg.type_cmd == CMD_CFG) begin
             if(cmd_reg.wr_en == 1'b1) begin
                 hdr_o[7:0] <= 8'b010_00100; // Config Write Type 0
                 hdr_o[15:8]    <= {1'b0, 3'b000, 1'b0, 1'b0, 1'b0, 1'b0}; // Byte 1: R, TC[2:0]=000, R, Attr[2]=0, R, TH

@@ -1,5 +1,4 @@
 package tl_pkg;
-
   //----------------------------------------------------------------
   // Link-side streaming record (to / from DLL)
   //----------------------------------------------------------------
@@ -25,7 +24,7 @@ typedef enum logic [1:0] {
 
 typedef struct packed {
   // Transaction type
-  tl_cmd_type_e type;    
+  tl_cmd_type_e type_cmd;    
 
   // Common fields
   logic [9:0]  len;       // Length in DWs (1–1024)
@@ -59,12 +58,12 @@ typedef struct packed {
   // Flow-control credit vector (PH/PD/NPH/NPD/CPLH/CPLD)
   //----------------------------------------------------------------
   typedef struct packed {
-    logic [11:0] ph;
-    logic [11:0] pd;
-    logic [7:0]  nph;
-    logic [11:0] npd;
-    logic [7:0]  cplh;
-    logic [11:0] cpld;
+    logic [11:0] ph_credits;
+    logic [11:0] pd_credits;
+    logic [7:0]  nph_credits;
+    logic [11:0] npd_credits;
+    logic [7:0]  cplh_credits;
+    logic [11:0] cpld_credits;
   } tl_credit_t;
 
   //----------------------------------------------------------------
@@ -73,7 +72,7 @@ typedef struct packed {
   localparam int TAG_W = 8; // Default tag width if not overridden
 typedef enum logic [2:0] {
   CPL_SUCCESS = 3'd0, // Successful Completion
-  CPL_UR      = 3'd1, // Unsupported Request
+  CPL_UR      = 3'd1 // Unsupported Request
 } tl_cpl_status_e;
 
 typedef struct packed {

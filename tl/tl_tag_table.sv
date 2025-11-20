@@ -14,7 +14,7 @@ module tl_tag_table #(
 
   // Metadata to store for allocated Tag
   input  logic [15:0]            alloc_req_id_i,   // Requester ID
-  input  logic [31:0]            alloc_addr_i,     // Address (Lower bits used in Cpl)
+  input  logic [31:0]            alloc_addr_i,     
   input  logic [9:0]             alloc_len_i,      // Length in DWs
   input  logic [2:0]             alloc_attr_i,     // Attributes (RO/NS etc.)
 

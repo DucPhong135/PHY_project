@@ -7,7 +7,7 @@ import tl_pkg::*;
   input  logic                   rst_n,
 
   // Completion from RX parser (cpl_rx_t includes tag, data, status, etc.)
-  input  tl_pkg::cpl_rx_t        cpl_i,
+  input  cpl_rx_t        cpl_i,
   input  logic                   cpl_valid_i,
   output logic                   cpl_ready_o,
 
@@ -47,7 +47,7 @@ import tl_pkg::*;
   state_t state, next_state;
 
   // Registered completion data (latched in LOOKUP)
-  tl_pkg::cpl_rx_t cpl_reg;
+  cpl_rx_t cpl_reg;
 
   // lookup registers (latched in CHECK)
   logic [15:0]            lookup_req_id_reg;
@@ -95,7 +95,7 @@ import tl_pkg::*;
           end
         end
         CHECK: begin
-          if(lookup_req_id_reg == cpl_reg.req_id && cpl_reg.status == tl_cpl_status_e::CPL_SUCCESS) begin
+          if(lookup_req_id_reg == cpl_reg.requester_id && cpl_reg.status == CPL_SUCCESS) begin
             next_state = STREAM;
           end
           else begin
@@ -185,7 +185,7 @@ import tl_pkg::*;
     else begin
         case (state)
           CHECK: begin
-            if(lookup_req_id_reg == cpl_reg.req_id && cpl_reg.status == tl_cpl_status_e::CPL_SUCCESS) begin
+            if(lookup_req_id_reg == cpl_reg.requester_id && cpl_reg.status == CPL_SUCCESS) begin
               // Valid completion
               total_beats <= (lookup_len_reg - 10'd1 + 10'd3) >> 2;
               total_beats <= total_beats + 1;

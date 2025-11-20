@@ -75,7 +75,7 @@ logic [127:0] cpl_hdr_reg;
       FSM_GEN_HDR: begin
         // Decode the command and decide next steps
        case (cpl_cmd_reg.cpl_status)
-                tl_pkg::tl_cpl_status_e'(CPL_SUCCESS): begin
+                CPL_SUCCESS: begin
                     if(cpl_cmd_reg.has_data && cpl_pkt_ready_i) begin
                         if (credit_hdr_ok_i && credit_data_ok_i) begin
                             fsm_next = FSM_SEND_HDR; // For write, go back to IDLE after sending header
@@ -93,7 +93,7 @@ logic [127:0] cpl_hdr_reg;
                         fsm_next = FSM_GEN_HDR; // wait until credits are available
                     end
                 end
-                tl_pkg::tl_cpl_status_e'(CPL_UR): begin
+                CPL_UR: begin
                     if(!cpl_cmd_reg.has_data && cpl_pkt_ready_i) begin
                         if( credit_hdr_ok_i) begin
                             fsm_next = FSM_SEND_HDR; // For read, go back to IDLE after sending header
@@ -109,7 +109,7 @@ logic [127:0] cpl_hdr_reg;
       end
       FSM_SEND_HDR: begin
          case (cpl_cmd_reg.cpl_status)
-                tl_pkg::tl_cpl_status_e'(CPL_SUCCESS): begin
+                CPL_SUCCESS: begin
                     if(cpl_cmd_reg.has_data && cpl_pkt_ready_i) begin
                         if (credit_hdr_ok_i && credit_data_ok_i) begin
                             fsm_next = FSM_SEND_DATA; // For write, go back to IDLE after sending header
@@ -127,7 +127,7 @@ logic [127:0] cpl_hdr_reg;
                         fsm_next = FSM_SEND_HDR; // wait until credits are available
                     end
                 end
-                tl_pkg::tl_cpl_status_e'(CPL_UR): begin
+                CPL_UR: begin
                     if(!cpl_cmd_reg.has_data && cpl_pkt_ready_i) begin
                         if( credit_hdr_ok_i) begin
                             fsm_next = FSM_IDLE; // For read, go back to IDLE after sending header
@@ -143,7 +143,7 @@ logic [127:0] cpl_hdr_reg;
       end
       FSM_WAIT_CRED: begin
        case (cpl_cmd_reg.cpl_status)
-                tl_pkg::tl_cpl_status_e'(CPL_SUCCESS): begin
+                CPL_SUCCESS: begin
                     if(cpl_cmd_reg.has_data && cpl_pkt_ready_i) begin
                         if (credit_hdr_ok_i && credit_data_ok_i) begin
                             fsm_next = FSM_SEND_HDR; // For write, go back to IDLE after sending header
@@ -161,7 +161,7 @@ logic [127:0] cpl_hdr_reg;
                         fsm_next = FSM_WAIT_CRED; // wait until credits are available
                     end
                 end
-                tl_pkg::tl_cpl_status_e'(CPL_UR): begin
+                CPL_UR: begin
                     if(!cpl_cmd_reg.has_data && cpl_pkt_ready_i) begin
                         if(credit_hdr_ok_i) begin
                             fsm_next = FSM_SEND_HDR; // For read, go back to IDLE after sending header

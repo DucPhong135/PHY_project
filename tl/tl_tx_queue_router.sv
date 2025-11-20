@@ -27,7 +27,7 @@ module tl_tx_queue_router
   // Output to Completion queue
   output tl_stream_t              pkt_cpl_o,
   output logic                    pkt_cpl_valid_o,
-  input  logic                    pkt_cpl_ready_i,
+  input  logic                    pkt_cpl_ready_i
 );
 
   // ========== Queue Type Selection ==========
@@ -137,9 +137,5 @@ module tl_tx_queue_router
         pkt_ready_o      = 1'b1;
       end
     endcase
-  end
-
-      
-      
-
+  end    
 endmodule

@@ -1,5 +1,3 @@
-`timescale 1ns/1ps
-`default_nettype none
 import tl_pkg::*;      // bring in the typedefs
 
 module tl_top #(
@@ -174,11 +172,11 @@ module tl_top #(
 
   // Header Generator - Creates TLP headers from user commands
   tl_hdr_gen #(
-    .TAG_W(TAG_W),
-    .REQUESTER_ID(16'h0000)  // Will be overridden by cfg_space at runtime
   ) u_hdr_gen (
     .clk              (clk),
     .rst_n            (rst_n),
+
+    .REQUESTER_ID(requester_id),  // Configurable at runtime
     
     // User command input
     .cmd_i            (usr_cmd_i),

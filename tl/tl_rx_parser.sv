@@ -1,36 +1,38 @@
-module tl_rx_parser #(
+module tl_rx_parser 
+import tl_pkg::*;
+#(
   parameter int TAG_W = 8
-)(
+)
+(
   input  logic                   clk,
   input  logic                   rst_n,
 
   // Stream from DLL
-  input  tl_pkg::tl_stream_t     tl_rx_i,
+  input  tl_stream_t     tl_rx_i,
   input  logic                   tl_rx_valid_i,
   output logic                   tl_rx_ready_o,
 
   // Memory Write to user
-  output tl_pkg::tl_data_t       memwr_o,
+  output tl_data_t       memwr_o,
   output logic                   memwr_valid_o,
   input  logic                   memwr_ready_i,
 
   // Forward completion info to completion engine
-  output tl_pkg::cpl_rx_t        cpl_o,
+  output cpl_rx_t        cpl_o,
   output logic                   cpl_valid_o,
   input  logic                   cpl_ready_i,
 
   // -> to completion generator (for MRd/CfgRd received)
-  output tl_pkg::cpl_gen_cmd_t cpl_cmd_o,
+  output cpl_gen_cmd_t cpl_cmd_o,
   output logic                 cpl_cmd_valid_o,
   input  logic                 cpl_cmd_ready_i,
 
   // -> to config space block (CSR read/write side-effects)
-  output tl_pkg::cfg_req_t     cfg_req_o,      // {is_read, addr, first_be, last_be, data, length_dw, requester_id, tag}
+  output cfg_req_t             cfg_req_o,      // {is_read, addr, first_be, last_be, data, length_dw, requester_id, tag}
   output logic                 cfg_req_valid_o,
-  input  logic                 cfg_req_ready_i,
+  input  logic                 cfg_req_ready_i
 );
 
-  // TODO: header decode, ECRC, etc.
 typedef enum int {
   TL_MRD,
   TL_MWR,
@@ -46,20 +48,20 @@ pkt_type_e pkt_type;
 
 typedef enum logic [2:0] {
     ST_IDLE,
-    ST_LATCH_HDR,     // ← NEW: Latch header for stable decode
-    ST_DECODE_HDR,    // ← Decode from registered header
-    ST_ROUTE_PKT,     // ← Route based on decoded type
-    ST_DATA_BEAT,     // ← Stream multi-beat data
-    ST_DROP_PKT       // ← Drop unsupported packets
+    ST_LATCH_HDR,     // �? NEW: Latch header for stable decode
+    ST_DECODE_HDR,    // �? Decode from registered header
+    ST_ROUTE_PKT,     // �? Route based on decoded type
+    ST_DATA_BEAT,     // �? Stream multi-beat data
+    ST_DROP_PKT       // �? Drop unsupported packets
 } state_e;
 
   // ========== Registers ==========
   state_e fsm_state, fsm_next;
   
-  logic [127:0] hdr_reg;           // ← LATCHED header (stable)
-  pkt_type_e pkt_type_reg;         // ← DECODED type (stable)
-  logic is_4dw_hdr_reg;            // ← Header format (stable)
-  logic [9:0] length_dw_reg;       // ← Payload length (stable)
+  logic [127:0] hdr_reg;           // �? LATCHED header (stable)
+  pkt_type_e pkt_type_reg;         // �? DECODED type (stable)
+  logic is_4dw_hdr_reg;            // �? Header format (stable)
+  logic [9:0] length_dw_reg;       // �? Payload length (stable)
   logic [11:0] dw_count;
   logic is_first_data_beat;
   
@@ -484,7 +486,6 @@ always_comb begin
     cfg_req_o.requester_id = {hdr_reg[39:32], hdr_reg[47:40]};
     cfg_req_o.tag          = hdr_reg[55:48];
     cfg_req_o.first_be     = first_be;
-    cfg_req_o.last_be      = last_be;
     cfg_req_o.reg_num      = {hdr_reg[87:84], hdr_reg[95:90]};
     cfg_req_o.data         = (pkt_type_reg == TL_CFGWR) ? hdr_reg[127:96] : 32'd0;
     if(cfg_req_ready_i) begin

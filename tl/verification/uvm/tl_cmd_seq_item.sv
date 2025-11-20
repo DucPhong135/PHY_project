@@ -1,206 +1,126 @@
 `ifndef TL_CMD_SEQ_ITEM_SV
 `define TL_CMD_SEQ_ITEM_SV
 
+
+
 class tl_cmd_seq_item extends uvm_sequence_item;
   
+  `uvm_object_utils(tl_cmd_seq_item)
+  
   //------------------------------------------------------------------
-  // Command Fields (match tl_cmd_t)
+  // Command Fields
   //------------------------------------------------------------------
+  rand tl_cmd_type_e trans_type;
+  rand bit        is_write;
+  rand bit [63:0] addr;
+  rand bit [9:0]  length_dw;  // Length in DWs
+  rand bit [3:0]  first_be;
+  rand bit [3:0]  last_be;
+  rand bit [7:0]  tag;
   
-  rand tl_pkg::tl_cmd_type_e trans_type;  // CMD_MEM, CMD_CFG, CMD_CPL
-  rand bit [9:0]             length_dw;   // Length in DWs (1-1024)
-  rand bit                   is_write;    // 1=Write, 0=Read (wr_en)
-  rand bit [3:0]             first_be;    // First DW Byte Enable
-  
-  // Memory transaction fields
-  rand bit [63:0]            addr;        // 64-bit byte address
-  
-  // Config transaction fields  
-  rand bit [7:0]             cfg_bus;
-  rand bit [4:0]             cfg_device;
-  rand bit [2:0]             cfg_function;
-  rand bit [9:0]             cfg_reg_num;
+  //------------------------------------------------------------------
+  // Data Payload (for writes)
+  //------------------------------------------------------------------
+  rand bit [31:0] data_payload[$];  // Queue of DWs
   
   //------------------------------------------------------------------
   // Constraints
   //------------------------------------------------------------------
-  
-  // Transaction type distribution
-  constraint c_trans_type {
-    trans_type dist {
-      tl_pkg::CMD_MEM := 80,  // 80% memory
-      tl_pkg::CMD_CFG := 20   // 20% config
-    };
+  constraint valid_trans_type_c {
+    trans_type inside {tl_pkg::CMD_MEM, tl_pkg::CMD_CFG};
   }
   
-  // Length constraints
-  constraint c_length {
-    // Config transactions are always 1 DW
-    if (trans_type == tl_pkg::CMD_CFG) {
-      length_dw == 1;
-    }
-    
-    // Memory can be variable
-    if (trans_type == tl_pkg::CMD_MEM) {
-      length_dw dist {
-        1       := 30,      // 30% single DW
-        [2:4]   := 40,      // 40% small bursts
-        [5:8]   := 20,      // 20% medium bursts
-        [9:16]  := 10       // 10% large bursts
-      };
+  constraint valid_length_c {
+    length_dw inside {[1:256]};
+  }
+  
+  constraint valid_addr_c {
+    addr[1:0] == 2'b00;  // DW aligned
+  }
+  
+  // Data payload must match length for writes
+  constraint data_length_c {
+    if (is_write) {
+      data_payload.size() == length_dw;
+    } else {
+      data_payload.size() == 0;
     }
   }
   
-  // Memory address constraints
-  constraint c_mem_addr {
-    if (trans_type == tl_pkg::CMD_MEM) {
-      // Mostly aligned, some unaligned for testing
-      addr[1:0] dist {
-        2'b00 := 70,  // 70% DW-aligned
-        2'b01 := 10,  // 10% byte+1
-        2'b10 := 10,  // 10% byte+2
-        2'b11 := 10   // 10% byte+3
-      };
-      
-      // Reasonable address range
-      addr[63:32] dist {
-        [32'h0000_00FF : 32'h0000_0001] := 10,
-        32'h0000_0000 := 90
-      }; 
-      addr[31:0] inside {[32'h0000_0000 : 32'hFFFF_FFFF]};
+  constraint valid_be_c {
+    first_be dist {4'b0001 := 1, 4'b0011 := 1, 4'b0111 := 1, 4'b1111 := 7};
+    if (length_dw == 1) {
+      last_be == 4'b0000;
+    } else {
+      last_be dist {4'b0001 := 1, 4'b0011 := 1, 4'b0111 := 1, 4'b1111 := 7};
     }
   }
-  
-  // First DW Byte Enable
-  constraint c_first_be {
-    first_be != 4'b0000;  // At least one byte must be valid
-    
-    // For aligned addresses, all bytes typically valid
-    if (trans_type == tl_pkg::CMD_MEM && addr[1:0] == 2'b00) {
-      first_be == 4'b1111;
-    }
-    
-    // For unaligned, mask based on offset
-    if (trans_type == tl_pkg::CMD_MEM && addr[1:0] == 2'b01) {
-      first_be == 4'b1110;
-    }
-    if (trans_type == tl_pkg::CMD_MEM && addr[1:0] == 2'b10) {
-      first_be == 4'b1100;
-    }
-    if (trans_type == tl_pkg::CMD_MEM && addr[1:0] == 2'b11) {
-      first_be == 4'b1000;
-    }
-    
-    // Config: typically all bytes valid
-    if (trans_type == tl_pkg::CMD_CFG) {
-      first_be == 4'b1111;
-    }
-  }
-  
-  // Config BDF constraints
-  constraint c_cfg_bdf {
-    if (trans_type == tl_pkg::CMD_CFG) {
-      cfg_bus inside {[0:15]};      // Limited bus range
-      cfg_device inside {[0:31]};   // Valid device numbers
-      cfg_function inside {[0:7]};  // Valid function numbers
-      cfg_reg_num inside {[0:255]}; // Config space registers
-      cfg_reg_num[1:0] == 2'b00;    // DW-aligned
-    }
-  }
-  
-  //------------------------------------------------------------------
-  // UVM Automation Macros
-  //------------------------------------------------------------------
-  
-  `uvm_object_utils_begin(tl_cmd_seq_item)
-    `uvm_field_enum(tl_pkg::tl_cmd_type_e, trans_type, UVM_ALL_ON)
-    `uvm_field_int(length_dw,    UVM_ALL_ON | UVM_DEC)
-    `uvm_field_int(is_write,     UVM_ALL_ON)
-    `uvm_field_int(first_be,     UVM_ALL_ON | UVM_BIN)
-    `uvm_field_int(addr,         UVM_ALL_ON | UVM_HEX)
-    `uvm_field_int(cfg_bus,      UVM_ALL_ON | UVM_DEC)
-    `uvm_field_int(cfg_device,   UVM_ALL_ON | UVM_DEC)
-    `uvm_field_int(cfg_function, UVM_ALL_ON | UVM_DEC)
-    `uvm_field_int(cfg_reg_num,  UVM_ALL_ON | UVM_HEX)
-  `uvm_object_utils_end
   
   //------------------------------------------------------------------
   // Constructor
   //------------------------------------------------------------------
-  
   function new(string name = "tl_cmd_seq_item");
     super.new(name);
   endfunction
   
   //------------------------------------------------------------------
-  // Convert to tl_cmd_t (for driving DUT)
+  // Convert to hardware command type
   //------------------------------------------------------------------
-  
   function tl_pkg::tl_cmd_t to_tl_cmd();
     tl_pkg::tl_cmd_t cmd;
     
-    cmd.type         = trans_type;
-    cmd.len          = length_dw;
-    cmd.wr_en        = is_write;
-    cmd.be           = first_be;
-    
-    if (trans_type == tl_pkg::CMD_MEM) begin
-      cmd.addr = addr;
-    end
-    else if (trans_type == tl_pkg::CMD_CFG) begin
-      cmd.bus          = cfg_bus;
-      cmd.device       = cfg_device;
-      cmd.function_num = cfg_function;
-      cmd.reg_num      = cfg_reg_num;
-    end
+    cmd.cmd_type  = trans_type;
+    cmd.is_write  = is_write;
+    cmd.addr      = addr;
+    cmd.length_dw = length_dw;
+    cmd.first_be  = first_be;
+    cmd.last_be   = last_be;
+    cmd.tag       = tag;
     
     return cmd;
   endfunction
   
   //------------------------------------------------------------------
-  // Utility: Create specific transaction types
+  // Get data beat at index (4 DWs per 128-bit beat)
   //------------------------------------------------------------------
-  
-  // Memory Write
-  function void set_mem_write(bit [63:0] addr_val, int len_val);
-    trans_type = tl_pkg::CMD_MEM;
-    is_write   = 1'b1;
-    addr       = addr_val;
-    length_dw  = len_val;
-    first_be   = 4'b1111;  // Default to all bytes
+  function bit [127:0] get_data_beat(int beat_idx);
+    bit [127:0] beat_data;
+    int dw_start = beat_idx * 4;
+    
+    for (int i = 0; i < 4; i++) begin
+      int dw_idx = dw_start + i;
+      if (dw_idx < data_payload.size()) begin
+        beat_data[i*32 +: 32] = data_payload[dw_idx];
+      end else begin
+        beat_data[i*32 +: 32] = 32'h0;
+      end
+    end
+    
+    return beat_data;
   endfunction
   
-  // Memory Read
-  function void set_mem_read(bit [63:0] addr_val, int len_val);
-    trans_type = tl_pkg::CMD_MEM;
-    is_write   = 1'b0;
-    addr       = addr_val;
-    length_dw  = len_val;
-    first_be   = 4'b1111;
+  //------------------------------------------------------------------
+  // Get number of data beats needed
+  //------------------------------------------------------------------
+  function int get_num_beats();
+    return (length_dw + 3) / 4;  // Round up to 128-bit beats
   endfunction
   
-  // Config Write
-  function void set_cfg_write(bit [7:0] bus, bit [4:0] dev, bit [2:0] func, bit [9:0] reg_num);
-    trans_type   = tl_pkg::CMD_CFG;
-    is_write     = 1'b1;
-    cfg_bus      = bus;
-    cfg_device   = dev;
-    cfg_function = func;
-    cfg_reg_num  = reg_num;
-    length_dw    = 10'd1;
-    first_be     = 4'b1111;
-  endfunction
-  
-  // Config Read
-  function void set_cfg_read(bit [7:0] bus, bit [4:0] dev, bit [2:0] func, bit [9:0] reg_num);
-    trans_type   = tl_pkg::CMD_CFG;
-    is_write     = 1'b0;
-    cfg_bus      = bus;
-    cfg_device   = dev;
-    cfg_function = func;
-    cfg_reg_num  = reg_num;
-    length_dw    = 10'd1;
-    first_be     = 4'b1111;
+  //------------------------------------------------------------------
+  // UVM Print
+  //------------------------------------------------------------------
+  function void do_print(uvm_printer printer);
+    super.do_print(printer);
+    printer.print_string("Type", trans_type.name());
+    printer.print_field("Is Write", is_write, 1, UVM_BIN);
+    printer.print_field("Address", addr, 64, UVM_HEX);
+    printer.print_field("Length (DW)", length_dw, 10, UVM_DEC);
+    printer.print_field("First BE", first_be, 4, UVM_BIN);
+    printer.print_field("Last BE", last_be, 4, UVM_BIN);
+    printer.print_field("Tag", tag, 8, UVM_HEX);
+    if (is_write) begin
+      printer.print_field("Data DWs", data_payload.size(), 32, UVM_DEC);
+    end
   endfunction
 
 endclass : tl_cmd_seq_item

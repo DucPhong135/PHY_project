@@ -1,4 +1,6 @@
-module tl_tx_arb #(
+module tl_tx_arb
+import tl_pkg::*;
+#(
   // ---------------- existing ----------------
   parameter int STREAM_W = 128,
 
@@ -16,17 +18,17 @@ module tl_tx_arb #(
   // ==========================================================
   // 1)  REQUEST QUEUES  (unchanged)
   // ==========================================================
-  input  tl_pkg::tl_stream_t     pkt_posted_i,
+  input  tl_stream_t     pkt_posted_i,
   input  logic                   pkt_posted_valid_i,
   output logic                   pkt_posted_ready_o,
 
-  input  tl_pkg::tl_stream_t     pkt_np_i,
+  input  tl_stream_t     pkt_np_i,
   input  logic                   pkt_np_valid_i,
   output logic                   pkt_np_ready_o,
 
 
   // Completion queue (Cpl / CplD)
-  input  tl_pkg::tl_stream_t     pkt_cpl_i,
+  input  tl_stream_t     pkt_cpl_i,
   input  logic                   pkt_cpl_valid_i,
   output logic                   pkt_cpl_ready_o,
 
@@ -63,7 +65,7 @@ module tl_tx_arb #(
   // ==========================================================
   // 3)  ARBITRATED OUTPUT TO DATA-LINK LAYER  (unchanged)
   // ==========================================================
-  output tl_pkg::tl_stream_t     tl_tx_o,
+  output tl_stream_t     tl_tx_o,
   output logic                   tl_tx_valid_o,
   input  logic                   tl_tx_ready_i
 );
@@ -92,7 +94,7 @@ logic [2:0] grant_state;       // Combinational grant decision
 logic [2:0] grant_state_reg;   // Registered grant for holding during transmission
 
 
-tl_pkg::tl_stream_t tl_hdr_o;
+tl_stream_t tl_hdr_o;
 
 logic posted_eligible = ph_credit_ok_i && pkt_posted_valid_i && (!pkt_posted_i.data[126] || pd_credit_ok_i);
 logic np_eligible     = nph_credit_ok_i && pkt_np_valid_i && (!pkt_np_i.data[126] || npd_credit_ok_i);
