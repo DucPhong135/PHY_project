@@ -18,17 +18,17 @@ import tl_pkg::*;
   // ==========================================================
   // 1)  REQUEST QUEUES  (unchanged)
   // ==========================================================
-  input  tl_stream_t     pkt_posted_i,
+  input  tl_stream_t             pkt_posted_i,
   input  logic                   pkt_posted_valid_i,
   output logic                   pkt_posted_ready_o,
 
-  input  tl_stream_t     pkt_np_i,
+  input  tl_stream_t             pkt_np_i,
   input  logic                   pkt_np_valid_i,
   output logic                   pkt_np_ready_o,
 
 
   // Completion queue (Cpl / CplD)
-  input  tl_stream_t     pkt_cpl_i,
+  input  tl_stream_t             pkt_cpl_i,
   input  logic                   pkt_cpl_valid_i,
   output logic                   pkt_cpl_ready_o,
 
@@ -65,7 +65,7 @@ import tl_pkg::*;
   // ==========================================================
   // 3)  ARBITRATED OUTPUT TO DATA-LINK LAYER  (unchanged)
   // ==========================================================
-  output tl_stream_t     tl_tx_o,
+  output tl_stream_t             tl_tx_o,
   output logic                   tl_tx_valid_o,
   input  logic                   tl_tx_ready_i
 );
@@ -96,9 +96,12 @@ logic [2:0] grant_state_reg;   // Registered grant for holding during transmissi
 
 tl_stream_t tl_hdr_o;
 
-logic posted_eligible = ph_credit_ok_i && pkt_posted_valid_i && (!pkt_posted_i.data[126] || pd_credit_ok_i);
-logic np_eligible     = nph_credit_ok_i && pkt_np_valid_i && (!pkt_np_i.data[126] || npd_credit_ok_i);
-logic cpl_eligible    = cplh_credit_ok_i && pkt_cpl_valid_i && (!pkt_cpl_i.data[126] || cpld_credit_ok_i);
+logic posted_eligible;
+assign posted_eligible = ph_credit_ok_i && pkt_posted_valid_i && (!pkt_posted_i.data[126] || pd_credit_ok_i);
+logic np_eligible;
+assign np_eligible = nph_credit_ok_i && pkt_np_valid_i && (!pkt_np_i.data[126] || npd_credit_ok_i);
+logic cpl_eligible;
+assign cpl_eligible = cplh_credit_ok_i && pkt_cpl_valid_i && (!pkt_cpl_i.data[126] || cpld_credit_ok_i);
 
 always_ff @(posedge clk or negedge rst_n) begin
   if(!rst_n) begin
@@ -187,28 +190,26 @@ always_ff @(posedge clk or negedge rst_n) begin
 end
 
 // Output packet data - from latched header in HDR state, or directly from input in DATA state
-always_ff @(posedge clk or negedge rst_n) begin
-  if(!rst_n) begin
-    tl_tx_o <= '0;
-  end
-  else begin
-    if(fsm_state == HDR && tl_tx_ready_i) begin
-      // Use latched header in HDR state
-      tl_tx_o <= tl_hdr_o;
+always_comb begin
+  case(fsm_state)
+    IDLE: tl_tx_o = '0;
+    HDR: begin
+      if(tl_tx_ready_i) begin
+        tl_tx_o = tl_hdr_o;
+      end
     end
-    else if(fsm_state == DATA && tl_tx_ready_i) begin
-      // Pass through data beats directly from input queues
-      case (grant_state)
-        GRANT_CPL: tl_tx_o <= pkt_cpl_i;
-        GRANT_NP : tl_tx_o <= pkt_np_i;
-        GRANT_P  : tl_tx_o <= pkt_posted_i;
-        default  : tl_tx_o <= '0;
-      endcase
+    DATA: begin
+      if(tl_tx_ready_i) begin
+        case (grant_state)
+          GRANT_CPL: tl_tx_o = pkt_cpl_i;
+          GRANT_NP: tl_tx_o = pkt_np_i;
+          GRANT_P: tl_tx_o = pkt_posted_i;
+          default:  tl_tx_o = '0;
+        endcase
+      end
     end
-    else if(fsm_state == IDLE) begin
-      tl_tx_o <= '0;
-    end
-  end
+    default: tl_tx_o = '0;
+  endcase
 end
 
 
@@ -245,9 +246,9 @@ always_comb begin
     HDR: begin
       // Valid when we have a valid packet from the granted source
       case(grant_state)
-        GRANT_CPL: tl_tx_valid_o = pkt_cpl_valid_i && tl_tx_ready_i;
-        GRANT_NP:  tl_tx_valid_o = pkt_np_valid_i && tl_tx_ready_i;
-        GRANT_P:   tl_tx_valid_o = pkt_posted_valid_i && tl_tx_ready_i;
+        GRANT_CPL: tl_tx_valid_o = tl_tx_ready_i;
+        GRANT_NP:  tl_tx_valid_o = tl_tx_ready_i;
+        GRANT_P:   tl_tx_valid_o = tl_tx_ready_i;
         default:   tl_tx_valid_o = 1'b0;
       endcase
     end

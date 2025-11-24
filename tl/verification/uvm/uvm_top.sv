@@ -1,6 +1,8 @@
 `ifndef TOP_SV
 `define TOP_SV
 
+`timescale 1ns/1ps
+
 module top ();
     // Top-level UVM configuration and setup can be done 
     `include "uvm_macros.svh"
@@ -14,13 +16,15 @@ module top ();
     // 100MHz clock
     initial begin
         clk = 0;
-        forever #5ns clk = ~clk;
+        forever #5 clk = ~clk;
     end
     
     // Reset generation
     initial begin
+        rst_n = 1;
+        #10;
         rst_n = 0;
-        #100ns;
+        #100;
         rst_n = 1;
     end   
 
@@ -73,8 +77,8 @@ module top ();
   );
 
     initial begin
-        uvm_config_db#(virtual tl_user_if)::set(null, "tl_tx_test.tl_tx_tb.tl_env.tl_user_agent.tl_tx_agent.*", "vif", user_if);
-        uvm_config_db#(virtual tl_dll_if)::set(null, "tl_tx_test.tl_tx_tb.tl_env.tl_dll_agent.tl_dll_agent.*", "vif", dll_if);
+        uvm_config_db#(virtual tl_user_if)::set(null, "uvm_test_top.tx_tb.env.user_agent.*", "user_vif", user_if);
+        uvm_config_db#(virtual tl_dll_if)::set(null, "uvm_test_top.tx_tb.env.dll_agent.*", "dll_vif", dll_if);
         run_test("tl_tx_test");
     end
 

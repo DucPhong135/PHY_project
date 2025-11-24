@@ -55,7 +55,7 @@ import tl_pkg::*;
 
 always_ff @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
-        ph_avail <= '0;
+        ph_avail <= PH_WIDTH'('1);
     end
     else begin
         // Handle simultaneous increment and decrement
@@ -90,7 +90,7 @@ assign ph_credit_ok_o = (ph_avail >= MAX_HDR_THRESHOLD) ? 1'b1 : 1'b0;
 
 always_ff @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
-        pd_avail <= '0;
+        pd_avail <= PD_WIDTH'('1);
     end
     else begin
         // Handle simultaneous increment and decrement
@@ -125,7 +125,7 @@ assign pd_credit_ok_o = (pd_avail >= MAX_DATA_THRESHOLD) ? 1'b1 : 1'b0;
 
 always_ff @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
-        nph_avail <= '0;
+        nph_avail <= NPH_WIDTH'('1);
     end
     else begin
         // Handle simultaneous increment and decrement
@@ -160,7 +160,7 @@ assign nph_credit_ok_o = (nph_avail >= MAX_HDR_THRESHOLD) ? 1'b1 : 1'b0;
 
 always_ff @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
-        npd_avail <= '0;
+        npd_avail <= NPD_WIDTH'('1);
     end
     else begin
         // Handle simultaneous increment and decrement
@@ -195,7 +195,7 @@ assign npd_credit_ok_o = (npd_avail >= MAX_DATA_THRESHOLD) ? 1'b1 : 1'b0;
 
 always_ff @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
-        cplh_avail <= '0;
+        cplh_avail <= CPLH_WIDTH'('1);
     end
     else begin
         // Handle simultaneous increment and decrement
@@ -230,7 +230,7 @@ assign cplh_credit_ok_o = (cplh_avail >= MAX_HDR_THRESHOLD) ? 1'b1 : 1'b0;
 
 always_ff @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
-        cpld_avail <= '0;
+        cpld_avail <= CPLD_WIDTH'('1);
     end
     else begin
         // Handle simultaneous increment and decrement

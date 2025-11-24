@@ -90,16 +90,16 @@ class tl_tlp_seq_item extends uvm_sequence_item;
     dw3 = hdr[127:96];
     
     // DW0: Format and Type
-    fmt      = dw0[31:29];
-    pkt_type = dw0[28:24];
-    tc       = dw0[22:20];
-    length   = dw0[9:0];
+    fmt      = dw0[7:5];
+    pkt_type = dw0[4:0];
+    tc       = dw0[14:12];
+    length   = {dw0[31:25], dw0[17:16]};
     
     // DW1: Requester ID, Tag, Byte Enables
-    requester_id = dw1[31:16];
-    tag          = dw1[15:8];
-    last_be      = dw1[7:4];
-    first_be     = dw1[3:0];
+    requester_id = {dw1[7:0], dw1[15:8]};
+    tag          = dw1[23:16];
+    last_be      = dw1[31:28];
+    first_be     = dw1[27:24];
     
     // DW2 & DW3: Address (depends on 3DW vs 4DW format)
     if (fmt[0]) begin
@@ -157,43 +157,160 @@ class tl_tlp_seq_item extends uvm_sequence_item;
   // Comparison functions
   //------------------------------------------------------------------
   
-  function bit compare_header(tl_cmd_seq_item cmd);
-    bit match = 1;
+  //------------------------------------------------------------------
+// Comparison function - Validates TLP header against command
+// Now includes first_be and last_be validation
+//------------------------------------------------------------------
+
+function bit compare_header(tl_user_seq_item cmd);
+  bit match = 1;
+  bit [3:0] expected_first_be;
+  bit [3:0] expected_last_be;
+  bit [1:0] start_offset;
+  bit [1:0] end_offset;
+  int total_bytes;
+  bit [31:0] expected_cfg_addr;
+  
+  // Calculate byte offsets
+  start_offset = cmd.addr[1:0];
+  total_bytes = cmd.length_dw * 4;  // Convert DWs to bytes
+  end_offset = (start_offset + total_bytes - 1) & 2'b11;
+  
+  //------------------------------------------------------------------
+  // Calculate expected first_be based on starting address offset
+  //------------------------------------------------------------------
+  case (start_offset)
+    2'b00: expected_first_be = 4'b1111;  // Start at byte 0
+    2'b01: expected_first_be = 4'b1110;  // Start at byte 1
+    2'b10: expected_first_be = 4'b1100;  // Start at byte 2
+    2'b11: expected_first_be = 4'b1000;  // Start at byte 3
+  endcase
+  
+  //------------------------------------------------------------------
+  // Calculate expected last_be based on ending address offset
+  //------------------------------------------------------------------
+  if (cmd.length_dw == 1) begin
+    // Single DW transfer: last_be = 0 per PCIe spec
+    expected_last_be = 4'b0000;
     
-    // Check transaction type
-    case (cmd.trans_type)
-      tl_pkg::CMD_MEM: begin
-        if (cmd.is_write) begin
-          match &= (pkt_type == 5'b00010);  // MWr
-        end
-        else begin
-          match &= (pkt_type == 5'b00000);  // MRd
-        end
+    // Adjust first_be for partial DW transfers
+    case (start_offset)
+      2'b00: begin
+        case (total_bytes)
+          1: expected_first_be = 4'b0001;
+          2: expected_first_be = 4'b0011;
+          3: expected_first_be = 4'b0111;
+          default: expected_first_be = 4'b1111;
+        endcase
       end
-      
-      tl_pkg::CMD_CFG: begin
-        if (cmd.is_write) begin
-          match &= (pkt_type inside {5'b01011, 5'b01010});  // CfgWr0/1
-        end
-        else begin
-          match &= (pkt_type inside {5'b00100, 5'b00101});  // CfgRd0/1
-        end
+      2'b01: begin
+        case (total_bytes)
+          1: expected_first_be = 4'b0010;
+          2: expected_first_be = 4'b0110;
+          default: expected_first_be = 4'b1110;
+        endcase
+      end
+      2'b10: begin
+        case (total_bytes)
+          1: expected_first_be = 4'b0100;
+          default: expected_first_be = 4'b1100;
+        endcase
+      end
+      2'b11: begin
+        expected_first_be = 4'b1000;
       end
     endcase
-    
-    // Check length
-    match &= (length == cmd.length_dw);
-    
-    // Check address
-    if (cmd.trans_type == tl_pkg::CMD_MEM) begin
-      match &= (address[63:2] == cmd.addr[63:2]);  // Ignore byte offset
+  end
+  else begin
+    // Multi-DW transfer: calculate last_be from end offset
+    case (end_offset)
+      2'b00: expected_last_be = 4'b0001;  // Ends at byte 0
+      2'b01: expected_last_be = 4'b0011;  // Ends at byte 1
+      2'b10: expected_last_be = 4'b0111;  // Ends at byte 2
+      2'b11: expected_last_be = 4'b1111;  // Ends at byte 3
+    endcase
+  end
+  
+  //------------------------------------------------------------------
+  // Check transaction type and TLP format
+  //------------------------------------------------------------------
+  case (cmd.trans_type)
+    tl_pkg::CMD_MEM: begin
+      if (cmd.is_write) begin
+        match &= (pkt_type == 5'b00010);  // Memory Write
+        match &= (fmt[1] == 1'b1);        // Has data payload
+      end
+      else begin
+        match &= (pkt_type == 5'b00000);  // Memory Read
+        match &= (fmt[1] == 1'b0);        // No data payload
+      end
+      
+      // Check address width: 3DW vs 4DW header
+      if (cmd.addr[63:32] != 32'h0) begin
+        match &= (fmt[0] == 1'b1);  // 4DW header
+        match &= (address == {cmd.addr[63:2], 2'b00});
+      end
+      else begin
+        match &= (fmt[0] == 1'b0);  // 3DW header
+        match &= (address[31:0] == {cmd.addr[31:2], 2'b00});
+      end
     end
     
-    // Check byte enables
-    match &= (first_be == cmd.first_be);
+    tl_pkg::CMD_CFG: begin
+      if (cmd.is_write) begin
+        match &= (pkt_type inside {5'b00100, 5'b00101});  // CfgWr0/CfgWr1
+        match &= (fmt[1] == 1'b1);  // Has data
+      end
+      else begin
+        match &= (pkt_type inside {5'b00100, 5'b00101});  // CfgRd0/CfgRd1
+        match &= (fmt[1] == 1'b0);  // No data
+      end
+      
+      // Config address = {bus[7:0], device[4:0], function[2:0], reg[9:2], 2'b00}
+      expected_cfg_addr = {cmd.bus, cmd.device, cmd.function_num, cmd.reg_num[9:2], 2'b00};
+      match &= (address[31:0] == expected_cfg_addr);
+    end
     
-    return match;
-  endfunction
+    default: begin
+      `uvm_error("TLP_CMP", $sformatf("Unknown trans_type: %s", cmd.trans_type.name()))
+      match = 0;
+    end
+  endcase
+  
+  //------------------------------------------------------------------
+  // Check length (in DWs)
+  //------------------------------------------------------------------
+  match &= (length == cmd.length_dw);
+  
+  //------------------------------------------------------------------
+  // Check Byte Enables
+  //------------------------------------------------------------------
+  match &= (first_be == expected_first_be);
+  match &= (last_be == expected_last_be);
+  
+  //------------------------------------------------------------------
+  // Debug output on mismatch
+  //------------------------------------------------------------------
+  if (!match) begin
+    `uvm_info("TLP_CMP", $sformatf({
+      "Header Mismatch:\n",
+      "  Type: %s, %s\n",
+      "  Addr: 0x%0h (offset %0d)\n",
+      "  Length: %0d DW (%0d bytes)\n",
+      "  Expected BE: first=0x%h, last=0x%h\n",
+      "  Got BE:      first=0x%h, last=0x%h\n",
+      "  TLP Type: 0x%h, Fmt: 0x%h"},
+      cmd.trans_type.name(),
+      cmd.is_write ? "Write" : "Read",
+      cmd.addr, start_offset,
+      cmd.length_dw, total_bytes,
+      expected_first_be, expected_last_be,
+      first_be, last_be,
+      pkt_type, fmt), UVM_LOW)
+  end
+  
+  return match;
+endfunction : compare_header
 
 endclass : tl_tlp_seq_item
 

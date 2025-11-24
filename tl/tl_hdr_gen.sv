@@ -14,7 +14,7 @@ import tl_pkg::*;
   input [15:0]                  REQUESTER_ID, // Requester ID for commands
 
   // User command channel
-  input  tl_pkg::tl_cmd_t        cmd_i,
+  input  tl_cmd_t                cmd_i,
   input  logic                   cmd_valid_i,
   output logic                   cmd_ready_o,
 
@@ -28,14 +28,6 @@ import tl_pkg::*;
   output logic [2:0]             tag_attr_o,  // Attributes associated with tag
 
 
-
-// ---------------- Credit-manager interface ------------
-  // Availability
-  input  logic                   ph_credit_ok_i,
-  input  logic                   pd_credit_ok_i,
-  input  logic                   nph_credit_ok_i,
-  input  logic                   npd_credit_ok_i,
-
   // Generated Header out
   output logic [127:0]           hdr_o,
   output logic                   hdr_valid_o,
@@ -48,12 +40,11 @@ typedef enum logic [2:0] {
   FSM_WAIT_TAG,
   FSM_GEN_HDR,
   FSM_SEND_HDR,
-  FSM_WAIT_CRED,
   FSM_UNSUPPORTED   // <-- new state
 } fsm_e;
 
 
-  logic [2:0] fsm_state, fsm_next;
+  fsm_e fsm_state, fsm_next;
   logic [TAG_W-1:0] cmd_tag_reg;
   tl_cmd_t cmd_reg;
 
@@ -88,127 +79,12 @@ always_comb begin
             end
         end
         FSM_GEN_HDR: begin
-            case (cmd_reg.type_cmd)
-                CMD_MEM: begin
-                    if(cmd_reg.wr_en && hdr_ready_i) begin
-                        if (ph_credit_ok_i && pd_credit_ok_i) begin
-                            fsm_next = FSM_SEND_HDR; // For write, go back to IDLE after sending header
-                        end else begin
-                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
-                        end
-                    end 
-                    else if(!cmd_reg.wr_en && hdr_ready_i) begin
-                        if (nph_credit_ok_i) begin
-                            fsm_next = FSM_SEND_HDR; // For read, go back to IDLE after sending header
-                        end else begin
-                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
-                        end
-                    end else begin
-                        fsm_next = FSM_GEN_HDR; // wait until credits are available
-                    end
-                end
-                CMD_CFG: begin
-                    if(cmd_reg.wr_en && hdr_ready_i) begin
-                        if (nph_credit_ok_i && npd_credit_ok_i) begin
-                            fsm_next = FSM_SEND_HDR; // For write, go back to IDLE after sending header
-                        end else begin
-                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
-                        end
-                    end 
-                    else if(!cmd_reg.wr_en && hdr_ready_i) begin
-                        if( nph_credit_ok_i) begin
-                            fsm_next = FSM_SEND_HDR; // For read, go back to IDLE after sending header
-                        end else begin
-                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
-                        end
-                    end
-                    else begin
-                        fsm_next = FSM_GEN_HDR; // wait until credits are available
-                    end
-                end
-            endcase
-        end
-        FSM_WAIT_CRED: begin
-            case (cmd_reg.type_cmd)
-                CMD_MEM: begin
-                    if(cmd_reg.wr_en && hdr_ready_i) begin
-                        if (ph_credit_ok_i && pd_credit_ok_i) begin
-                            fsm_next = FSM_SEND_HDR; // For write, go back to IDLE after sending header
-                        end else begin
-                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
-                        end
-                    end else if(!cmd_reg.wr_en && hdr_ready_i) begin
-                        if (nph_credit_ok_i) begin
-                            fsm_next = FSM_SEND_HDR; // For read, go back to IDLE after sending header
-                        end else begin
-                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
-                        end
-                    end else begin
-                        fsm_next = FSM_WAIT_CRED; // wait until credits are available
-                    end
-                end
-                CMD_CFG: begin
-                    if(cmd_reg.wr_en && hdr_ready_i) begin
-                        if (nph_credit_ok_i && npd_credit_ok_i) begin
-                            fsm_next = FSM_SEND_HDR; // For write, go back to IDLE after sending header
-                        end else begin
-                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
-                        end
-                    end else if(!cmd_reg.wr_en && hdr_ready_i) begin
-                        if(nph_credit_ok_i) begin
-                            fsm_next = FSM_SEND_HDR; // For read, go back to IDLE after sending header
-                        end else begin
-                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
-                        end
-                    end else begin
-                        fsm_next = FSM_WAIT_CRED; // wait until credits are available
-                    end
-                end
-                default: begin
-                    fsm_next = FSM_UNSUPPORTED; // Unsupported command type
-                end
-            endcase
+            fsm_next = FSM_SEND_HDR;
         end
         FSM_SEND_HDR: begin
-            case (cmd_reg.type_cmd)
-                CMD_MEM: begin
-                    if(cmd_reg.wr_en && hdr_ready_i) begin
-                        if (ph_credit_ok_i && pd_credit_ok_i) begin
-                            fsm_next = FSM_IDLE; // For write, go back to IDLE after sending header
-                        end else begin
-                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
-                        end
-                    end else if(!cmd_reg.wr_en && hdr_ready_i) begin
-                        if (nph_credit_ok_i) begin
-                            fsm_next = FSM_IDLE; // For read, go back to IDLE after sending header
-                        end else begin
-                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
-                        end
-                    end else begin
-                        fsm_next = FSM_SEND_HDR; 
-                    end
-                end
-                CMD_CFG: begin
-                   if(cmd_reg.wr_en && hdr_ready_i) begin
-                        if (nph_credit_ok_i && npd_credit_ok_i) begin
-                            fsm_next = FSM_IDLE; // For write, go back to IDLE after sending header
-                        end else begin
-                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
-                        end
-                    end else if(!cmd_reg.wr_en && hdr_ready_i) begin
-                        if( nph_credit_ok_i) begin
-                            fsm_next = FSM_IDLE; // For read, go back to IDLE after sending header
-                        end else begin
-                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
-                        end
-                    end else begin
-                        fsm_next = FSM_SEND_HDR; 
-                    end
-                end
-                default: begin
-                    fsm_next = FSM_UNSUPPORTED; // Unsupported command type
-                end
-            endcase
+            if (hdr_valid_o && hdr_ready_i) begin
+                fsm_next = FSM_IDLE;
+            end
         end
         FSM_UNSUPPORTED: begin
             fsm_next = FSM_IDLE; //simply go back to IDLE on next cycle
@@ -229,16 +105,11 @@ end
     [1:0]      Reserved
     For 64-bit address, add another 4 bytes for Address (63:32)
 */
-always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-        // reset logic
-        cmd_ready_o   <= 1'b0;
+always_comb begin
+    if(fsm_state == FSM_IDLE) begin
+        cmd_ready_o <= 1'b1;
     end else begin
-        if(fsm_state == FSM_IDLE) begin
-            cmd_ready_o <= 1'b1;
-        end else begin
-            cmd_ready_o <= 1'b0;
-        end
+        cmd_ready_o <= 1'b0;
     end
 end
 
@@ -430,21 +301,11 @@ always_ff @(posedge clk or negedge rst_n) begin
     end
 end
 
-always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-        hdr_valid_o <= 1'b0;
+always_comb begin
+    if(fsm_state == FSM_SEND_HDR && hdr_ready_i) begin
+        hdr_valid_o = 1'b1;
     end else begin
-        if(hdr_valid_o == 1'b1) 
-            hdr_valid_o <= 1'b0; // de-assert after one cycle
-        else if (fsm_state == FSM_SEND_HDR) begin
-            if(cmd_reg.wr_en == 1'b1 && ph_credit_ok_i && pd_credit_ok_i) begin
-                hdr_valid_o <= 1'b1; // For write, go back to IDLE after sending header
-            end else if(!cmd_reg.wr_en && nph_credit_ok_i) begin
-                hdr_valid_o <= 1'b1; // For read, go back to IDLE after sending header
-            end else begin
-                hdr_valid_o <= 1'b0;
-            end
-        end
+        hdr_valid_o = 1'b0;
     end
 end
 

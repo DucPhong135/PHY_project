@@ -8,7 +8,6 @@ module tl_payload_mux
 
   // Upstream write-data from user
   input  logic [127:0]            wdata_i,
-  input  logic [11:0]             wdata_dw_count_i,
   input  logic                    wdata_valid_i,
   output logic                    wdata_ready_o,
   output logic [1:0]              wdata_consumed_dw_o,  // ← NEW: How many DWs consumed
@@ -37,6 +36,8 @@ module tl_payload_mux
   logic [11:0] total_data_dw;
   logic [11:0] data_dw_sent;
   logic [11:0] dw_remaining;
+
+  logic [127:0] hdr_reg;
   
   assign dw_remaining = total_data_dw - data_dw_sent;
 
@@ -52,11 +53,11 @@ module tl_payload_mux
   logic [3:0] hdr_first_dw_be;
   logic [3:0] hdr_last_dw_be;
   
-  assign hdr_first_dw_be = hdr_i[63:60];
-  assign hdr_last_dw_be  = hdr_i[59:56];
+  assign hdr_first_dw_be = hdr_reg[63:60];
+  assign hdr_last_dw_be  = hdr_reg[59:56];
 
   // DWs in current beat (1-4)
-  logic [11:0] dw_this_beat;
+  logic [2:0] dw_this_beat;
   logic is_last_beat;
   
   // For 3DW header with data, first data beat takes 1 DW (packed with header)
@@ -92,112 +93,156 @@ module tl_payload_mux
     next_state = state;
     case (state)
       IDLE: begin
-        if (hdr_valid_i && tx_pkt_ready_i)
+        if (hdr_valid_i)
           next_state = HDR_BEAT;
       end
 
       HDR_BEAT: begin
         if (tx_pkt_ready_i) begin
-          if (total_data_dw == 12'd0)
+          if (total_data_dw == 12'd0 || hdr_reg[6] == 1'b0)
             next_state = IDLE;      // Header-only (MRd, CfgRd)
           else if (is_3dw_header && wdata_valid_i)
             next_state = DATA_BEAT; // 3DW header needs data for header beat
           else if(!is_3dw_header)
             next_state = DATA_BEAT; // Has payload (MWr, CfgWr)
         end
+        else begin
+          next_state = HDR_BEAT;
+        end
       end
 
       DATA_BEAT: begin
-        if (tx_pkt_ready_i && wdata_valid_i && is_last_beat)
+        if (tx_pkt_ready_i && wdata_valid_i && is_last_beat) begin
           next_state = IDLE;
+        end
+        else begin
+          next_state = DATA_BEAT;
+        end
       end
 
       default: next_state = IDLE;
     endcase
   end
 
-  // Payload counter, metadata latching, and byte enable capture
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-      total_data_dw      <= 12'd0;
-      data_dw_sent       <= 12'd0;
-      first_dw_be        <= 4'b0000;
-      last_dw_be         <= 4'b0000;
-      is_first_data_beat <= 1'b0;
+      hdr_reg <= '0;
     end
     else begin
-      case (state)
-        IDLE: begin
-          if (hdr_valid_i && tx_pkt_ready_i) begin
-            total_data_dw <= {hdr_i[17:16], hdr_i[31:24]}; //DW count from TLP header
-            data_dw_sent  <= 12'd0;
-            first_dw_be   <= hdr_first_dw_be;  // Latch FirstDWBE from header
-            last_dw_be    <= hdr_last_dw_be;   // Latch LastDWBE from header
-            is_3dw_header  <= (hdr_i[5] == 2'd0);
-          end
-        end
-
-        HDR_BEAT: begin
-          if (tx_pkt_ready_i && is_3dw_header && (total_data_dw != 12'd0) && wdata_valid_i) begin
-            is_first_data_beat <= 1'b1;
-            data_dw_sent       <= 12'd1;
-          end
-          // For 4DW header
-          else if (tx_pkt_ready_i && !is_3dw_header && (total_data_dw != 12'd0)) begin
-            is_first_data_beat <= 1'b1;
-          end
-        end
-
-        DATA_BEAT: begin
-          if (tx_pkt_ready_i && wdata_valid_i) begin
-            data_dw_sent <= data_dw_sent + dw_this_beat;
-            is_first_data_beat <= 1'b0;  // Clear after first data beat
-          end
-        end
-
-        default: begin
-          // Do nothing
-        end
-      endcase
+      if (hdr_valid_i && state == IDLE) begin
+        hdr_reg <= hdr_i;
+      end
     end
   end
+
+
+  always_comb begin
+    if(state == IDLE) begin
+      hdr_ready_o = 1'b1;
+    end
+    else begin
+      hdr_ready_o = 1'b0;
+    end
+  end
+
+  
+
+  always_comb begin
+    total_data_dw = {hdr_reg[17:16], hdr_reg[31:24]}; //DW count from TLP header
+    first_dw_be   = hdr_first_dw_be;  // Latch FirstDWBE from header
+    last_dw_be    = hdr_last_dw_be;   // Latch LastDWBE from header
+    is_3dw_header  = (hdr_reg[5] == 2'd0);
+  end
+
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      data_dw_sent <= 12'd0;
+    end
+    else begin
+      if (state == HDR_BEAT && next_state == DATA_BEAT) begin
+        if (is_3dw_header && wdata_valid_i && tx_pkt_ready_i) begin
+          data_dw_sent <= data_dw_sent + 12'd1; // First data DW packed with header
+        end
+      end
+      else if (state == DATA_BEAT && next_state == DATA_BEAT) begin
+        if (wdata_valid_i && tx_pkt_ready_i) begin
+          data_dw_sent <= data_dw_sent + dw_this_beat;
+        end
+      end
+      else if (state == DATA_BEAT && next_state == IDLE) begin
+        if (wdata_valid_i && tx_pkt_ready_i) begin
+          data_dw_sent <= data_dw_sent + dw_this_beat;
+        end
+      end
+      else if (state == IDLE) begin
+        data_dw_sent <= 12'd0;
+      end
+    end
+  end
+
+  always_latch begin
+    if (is_3dw_header && state == HDR_BEAT) begin
+      is_first_data_beat = 1'b1;
+    end
+    else if (state == DATA_BEAT && !is_3dw_header) begin
+      if(data_dw_sent == 12'd0)
+        is_first_data_beat = 1'b1;
+      else
+        is_first_data_beat = 1'b0;
+    end
+  end
+  
 
   always_comb begin
     // Defaults
     tx_pkt_o              = '0;
     tx_pkt_valid_o        = 1'b0;
-    hdr_ready_o           = 1'b0;
     wdata_ready_o         = 1'b0;
 
     case (state)
       HDR_BEAT: begin
         if (is_3dw_header && (total_data_dw != 12'd0)) begin
-          // 3DW header with payload: pack [Data_DW0][Hdr_DW2][Hdr_DW1][Hdr_DW0]
-          tx_pkt_o.data       = {wdata_i[31:0], hdr_i[95:0]};
-          tx_pkt_o.sop        = 1'b1;
-          tx_pkt_o.eop        = (total_data_dw == 12'd1);
-          // BE: [FirstDWBE for DW0][1111 for header]
-          tx_pkt_o.be         = (total_data_dw == 12'd1) ? {first_dw_be, 4'b1111} : 4'b1111;
-          tx_pkt_o.is_dllp    = 1'b0;
-          tx_pkt_valid_o      = wdata_valid_i;
-          
-          
-          hdr_ready_o         = tx_pkt_ready_i && wdata_valid_i;
-          wdata_ready_o       = tx_pkt_ready_i;
-          wdata_consumed_dw_o   = 2'd1;  // ← Only 1 DW consumed
+          if(hdr_reg[6] == 1'b1) begin // Write request with 3DW header
+            tx_pkt_o.data       = {hdr_reg[95:0], wdata_i[31:0]};
+            tx_pkt_o.sop        = 1'b1;
+            tx_pkt_o.eop        = (total_data_dw == 12'd0 || total_data_dw == 12'd1);
+            tx_pkt_o.be         = (total_data_dw == 12'd1) ? {first_dw_be, 4'b1111} : 4'b1111;
+            tx_pkt_o.is_dllp    = 1'b0;
+            tx_pkt_valid_o      = tx_pkt_ready_i && wdata_valid_i;
+            
+            wdata_ready_o       = tx_pkt_ready_i;
+            wdata_consumed_dw_o   = 2'd1;  // ← Only 1 DW consumed
+          end
+          else if(hdr_reg[6] == 1'b0) begin // Read request with 3DW header
+            tx_pkt_o.data       = {hdr_reg[95:0], 32'd0};
+            tx_pkt_o.sop        = 1'b1;
+            tx_pkt_o.eop        = 1'b1;
+            tx_pkt_o.be         = 4'b1111;
+            tx_pkt_o.is_dllp    = 1'b0;
+            tx_pkt_valid_o      = tx_pkt_ready_i;
+            wdata_consumed_dw_o   = 2'd0;  // ← No data consumed yet
+          end
         end
         else begin
-          // 4DW header or header-only
-          tx_pkt_o.data       = hdr_i;
-          tx_pkt_o.sop        = 1'b1;
-          tx_pkt_o.eop        = (total_data_dw == 12'd0);
-          tx_pkt_o.be         = 4'b1111;
-          tx_pkt_o.is_dllp    = 1'b0;
-          tx_pkt_valid_o      = 1'b1;
-          
-          
-          hdr_ready_o         = tx_pkt_ready_i;
-          wdata_consumed_dw_o = 2'd0;  // ← No data consumed
+          // 4DW header
+          if(hdr_i[6] == 1'b1) begin // Write request with 4DW header
+            tx_pkt_o.data       = hdr_i;
+            tx_pkt_o.sop        = 1'b1;
+            tx_pkt_o.eop        = (total_data_dw == 12'd0);
+            tx_pkt_o.be         = 4'b1111;
+            tx_pkt_o.is_dllp    = 1'b0;
+            tx_pkt_valid_o      = tx_pkt_ready_i;
+            wdata_consumed_dw_o = 2'd0;  // ← No data consumed yet
+          end
+          else if(hdr_i[6] == 1'b0) begin // Read request with 4DW header
+            tx_pkt_o.data       = hdr_i;
+            tx_pkt_o.sop        = 1'b1;
+            tx_pkt_o.eop        = 1'b1;
+            tx_pkt_o.be         = 4'b1111;
+            tx_pkt_o.is_dllp    = 1'b0;
+            tx_pkt_valid_o      = tx_pkt_ready_i;
+            wdata_consumed_dw_o = 2'd0;  // ← No data consumed yet
+          end
         end
       end
 
@@ -207,7 +252,7 @@ module tl_payload_mux
         tx_pkt_o.eop        = is_last_beat;
         tx_pkt_o.be         = be_this_beat;
         tx_pkt_o.is_dllp    = 1'b0;
-        tx_pkt_valid_o      = wdata_valid_i;
+        tx_pkt_valid_o      = wdata_valid_i && tx_pkt_ready_i;
         
         wdata_ready_o       = tx_pkt_ready_i;
         wdata_consumed_dw_o = dw_this_beat[1:0];  // ← 1-4 DWs consumed

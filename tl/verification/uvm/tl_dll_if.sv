@@ -2,10 +2,14 @@
 `define TL_DLL_IF_SV
 
 
+
 interface tl_dll_if (
     input logic clk,
     input logic rst_n
 );
+
+  import tl_pkg::*;
+
 
 tl_stream_t tl_tx_o;
 logic tl_tx_valid_o;
@@ -15,7 +19,7 @@ tl_stream_t tl_rx_i;
 logic tl_rx_valid_i;
 logic tl_rx_ready_o;
 
-fc_update_t fc_update_i;
+tl_credit_t fc_update_i;
 logic fc_valid_i;
 
   task automatic capture_tx_tlp(output tl_stream_t beats[$]);
@@ -51,16 +55,33 @@ logic fc_valid_i;
   endtask
 
 
-  task send_fc_update(bit [1:0] vc, bit [1:0] fc_type, bit [11:0] credits);
-    @(posedge clk);
-    fc_update_i.vc      <= vc;
-    fc_update_i.fc_type <= fc_type;
-    fc_update_i.credits <= credits;
-    fc_valid_i          <= 1'b1;
-    
-    @(posedge clk);
-    fc_valid_i <= 1'b0;
-  endtask
+//------------------------------------------------------------------
+// Driver Task: Send Flow Control Update
+// Uses tl_credit_t structure with 6 credit types
+//------------------------------------------------------------------
+task send_fc_update(
+  input logic [11:0] ph_credits,
+  input logic [11:0] pd_credits,
+  input logic [7:0]  nph_credits,
+  input logic [11:0] npd_credits,
+  input logic [7:0]  cplh_credits,
+  input logic [11:0] cpld_credits
+);
+  @(posedge clk);
+  
+  // Assign all credit fields
+  fc_update_i.ph_credits   <= ph_credits;
+  fc_update_i.pd_credits   <= pd_credits;
+  fc_update_i.nph_credits  <= nph_credits;
+  fc_update_i.npd_credits  <= npd_credits;
+  fc_update_i.cplh_credits <= cplh_credits;
+  fc_update_i.cpld_credits <= cpld_credits;
+  
+  fc_valid_i <= 1'b1;
+  
+  @(posedge clk);
+  fc_valid_i <= 1'b0;
+endtask
 
 
   task init_signals();
@@ -73,3 +94,4 @@ logic fc_valid_i;
 
 endinterface : tl_dll_if
 
+`endif

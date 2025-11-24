@@ -191,12 +191,6 @@ module tl_top #(
     .tag_len_o        (alloc_len),
     .tag_attr_o       (alloc_attr),
     
-    // Credit availability (updated interface)
-    .ph_credit_ok_i   (ph_credit_ok),
-    .pd_credit_ok_i   (pd_credit_ok),
-    .nph_credit_ok_i  (nph_credit_ok),
-    .npd_credit_ok_i  (npd_credit_ok),
-    
     // Header output
     .hdr_o            (hdr),
     .hdr_valid_o      (hdr_valid),
@@ -210,7 +204,6 @@ module tl_top #(
     
     // Write data input (updated interface)
     .wdata_i          (usr_wdata_i.data),
-    .wdata_dw_count_i (12'd4),  // Always 4 DWs per beat for 128-bit data
     .wdata_valid_i    (usr_wvalid_i),
     .wdata_ready_o    (usr_wready_o),
     .wdata_consumed_dw_o (),  // Not used currently
@@ -246,37 +239,36 @@ module tl_top #(
     // Output to Non-Posted queue
     .pkt_np_o         (pkt_to_fifo_np),
     .pkt_np_valid_o   (pkt_to_fifo_np_valid),
-    .pkt_np_ready_i   (pkt_to_fifo_np_ready),
-    
-    // Output to Completion queue (from cpl_gen, not from user)
-    .pkt_cpl_o        (),  // Not connected - cpl_gen goes directly to FIFO
-    .pkt_cpl_valid_o  (),
-    .pkt_cpl_ready_i  (1'b0)
+    .pkt_np_ready_i   (pkt_to_fifo_np_ready)
   );
 
-  // Posted FIFO - Buffers posted packets (MWr)
+  // Posted FIFO - Buffers posted packets (MWr, CfgWr)
   tl_fifo #(
     .DEPTH(FIFO_DEPTH)
   ) u_fifo_posted (
     .clk         (clk),
     .rst_n       (rst_n),
+
     .wr_data_i   (pkt_to_fifo_p),
     .wr_valid_i  (pkt_to_fifo_p_valid),
     .wr_ready_o  (pkt_to_fifo_p_ready),
+
     .rd_data_o   (pkt_posted),
     .rd_valid_o  (pkt_posted_valid),
     .rd_ready_i  (pkt_posted_ready)
   );
 
-  // Non-Posted FIFO - Buffers non-posted packets (MRd, CfgRd/Wr)
+  // Non-Posted FIFO - Buffers non-posted packets (MRd, CfgRd)
   tl_fifo #(
     .DEPTH(FIFO_DEPTH)
   ) u_fifo_np (
     .clk         (clk),
     .rst_n       (rst_n),
+    
     .wr_data_i   (pkt_to_fifo_np),
     .wr_valid_i  (pkt_to_fifo_np_valid),
     .wr_ready_o  (pkt_to_fifo_np_ready),
+
     .rd_data_o   (pkt_np),
     .rd_valid_o  (pkt_np_valid),
     .rd_ready_i  (pkt_np_ready)
@@ -288,16 +280,26 @@ module tl_top #(
   ) u_fifo_cpl (
     .clk         (clk),
     .rst_n       (rst_n),
+
     .wr_data_i   (cpl_gen_pkt),
     .wr_valid_i  (cpl_gen_valid),
     .wr_ready_o  (cpl_gen_ready),
+
     .rd_data_o   (pkt_cpl),
     .rd_valid_o  (pkt_cpl_valid),
     .rd_ready_i  (pkt_cpl_ready)
   );
 
   // Credit Manager - Tracks flow control credits
-  tl_credit_mgr u_credit_mgr (
+  tl_credit_mgr #(
+    .PH_WIDTH(10),
+    .PD_WIDTH(10),
+    .NPH_WIDTH(10),
+    .NPD_WIDTH(10),
+    .CPLH_WIDTH(10),
+    .CPLD_WIDTH(10)
+  )
+  u_credit_mgr (
     .clk              (clk),
     .rst_n            (rst_n),
     

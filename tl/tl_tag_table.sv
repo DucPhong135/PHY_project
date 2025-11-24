@@ -62,10 +62,10 @@ module tl_tag_table #(
     if(!rst_n) begin
       // Initialize free list with sequential tag values
       for(int i = 0; i < DEPTH; i++) begin
-        free_list[i] <= i[TAG_W-1:0];
+        free_list[i] <= i;
         ctx_table[i].valid <= 1'b0;
       end
-      free_count <= DEPTH[TAG_W-1:0];
+      free_count <= DEPTH[TAG_W-1:0] - 1'b1;
       free_head  <= '0;
       free_tail  <= DEPTH[TAG_W-1:0] - 1'b1;
     end else begin

@@ -29,7 +29,6 @@ typedef struct packed {
   // Common fields
   logic [9:0]  len;       // Length in DWs (1–1024)
   logic        wr_en;     // 1 = Write, 0 = Read
-  logic [3:0]  be;        // Byte enables (FirstDWBE/LastDWBE)
 
   // Memory-specific
   logic [63:0] addr;      // Byte address (used if type = CMD_MEM)

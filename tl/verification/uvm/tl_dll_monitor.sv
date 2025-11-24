@@ -2,7 +2,6 @@
 `define TL_DLL_MONITOR_SV
 
 
-
 class tl_dll_monitor extends uvm_monitor;
   
   `uvm_component_utils(tl_dll_monitor)
@@ -14,7 +13,7 @@ class tl_dll_monitor extends uvm_monitor;
   
   function void build_phase(uvm_phase phase);
     super.build_phase(phase);
-    if (!uvm_config_db#(virtual tl_dll_if)::get(this, "", "vif", vif)) begin
+    if (!uvm_config_db#(virtual tl_dll_if)::get(this, "", "dll_vif", vif)) begin
       `uvm_fatal("DLL_MON", "Virtual interface not found")
     end
   endfunction
@@ -24,7 +23,7 @@ class tl_dll_monitor extends uvm_monitor;
     
     forever begin
       @(posedge vif.clk);
-      
+      vif.tl_tx_ready_i <= 1'b1; // Always ready to accept data
       if (vif.tl_tx_valid_o && vif.tl_tx_ready_i) begin
         
         // Start new packet

@@ -28,17 +28,24 @@ logic [$clog2(DEPTH):0]  rd_ptr;
 localparam int ADDR_W = $clog2(DEPTH);
 
 // Write and read addresses (mask off MSB)
-logic [ADDR_W-1:0] wr_addr = wr_ptr[ADDR_W-1:0];
-logic [ADDR_W-1:0] rd_addr = rd_ptr[ADDR_W-1:0];
+logic [ADDR_W-1:0] wr_addr;
+assign wr_addr = wr_ptr[ADDR_W-1:0];
+
+logic [ADDR_W-1:0] rd_addr;
+assign rd_addr = rd_ptr[ADDR_W-1:0];
 
 // Full and empty detection
-logic full  = (wr_ptr[ADDR_W] != rd_ptr[ADDR_W]) && (wr_addr == rd_addr);
-logic empty = (wr_ptr == rd_ptr);
+logic full;
+assign full = (wr_ptr[ADDR_W] != rd_ptr[ADDR_W]) && (wr_addr == rd_addr);
+
+logic empty;
+assign empty = (wr_ptr == rd_ptr);
 
 // Write logic
 always_ff @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
         wr_ptr <= '0;
+        fifo_mem <= '{default: '0};
     end
     else begin
         if(wr_valid_i && wr_ready_o) begin

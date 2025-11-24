@@ -3,46 +3,38 @@
 
 
 
-class tx_seq extends uvm_sequence #(tl_cmd_seq_item);
+class tx_seq extends uvm_sequence #(tl_user_seq_item);
 
   `uvm_object_utils(tx_seq)
 
   // Configuration
-  rand int num_transactions;
+  int num_transactions = 10;
   
-  constraint num_trans_c {
-    num_transactions inside {[1:10]};
-  }
+  // constraint num_trans_c {
+  //   num_transactions inside {[5:7]};
+  // }
 
   function new(string name = "tx_seq");
     super.new(name);
+    set_automatic_phase_objection(1);
   endfunction
 
   virtual task body();
-    tl_cmd_seq_item tx_item;
+    tl_user_seq_item tx_item;
 
     `uvm_info("TX_SEQ", $sformatf("Starting sequence with %0d transactions", 
-              num_transactions), UVM_MEDIUM)
+              num_transactions),
+              UVM_LOW)
 
     repeat (num_transactions) begin
-      // Create sequence item
-      tx_item = tl_cmd_seq_item::type_id::create("tx_item");
-      
-      // Start transaction
-      start_item(tx_item);
-      
-      // Randomize (includes both command and data)
-      assert(tx_item.randomize() with {
+      `uvm_do_with(req, {
         trans_type == tl_pkg::CMD_MEM;
-        is_write   == 1'b1;           // Memory write
+        is_write   == 1'b0;           // Memory write
         length_dw  inside {[1:16]};   // Small transfers
       });
-      
-      // Finish transaction
-      finish_item(tx_item);
-      
-      `uvm_info("TX_SEQ", $sformatf("Sent Write: Addr=0x%0h, Len=%0d DW, Data[0]=0x%0h",
-                tx_item.addr, tx_item.length_dw, tx_item.data_payload[0]), UVM_HIGH)
+
+      `uvm_info("TX_SEQ", $sformatf("Sent packet: Addr=0x%0h, Write = %0b, Len=%0d DW, Data[0]=0x%0h",
+                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_LOW)
     end
   endtask
 
