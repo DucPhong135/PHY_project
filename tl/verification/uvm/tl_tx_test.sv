@@ -25,7 +25,13 @@ class tl_tx_test extends uvm_test;
   
   function void end_of_elaboration_phase(uvm_phase phase);
         uvm_top.print_topology();
-    endfunction : end_of_elaboration_phase
+  endfunction : end_of_elaboration_phase
+
+  task run_phase(uvm_phase phase);
+    uvm_objection obj = phase.get_objection();
+    obj.set_drain_time(this, 100ns); // Allow 100ns for cleanup
+    `uvm_info("TX_TEST", "Starting TL TX Test", UVM_LOW);
+  endtask : run_phase
 endclass : tl_tx_test
 
 `endif // TL_TX_TEST_SV

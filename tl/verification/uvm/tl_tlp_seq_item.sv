@@ -7,7 +7,8 @@ class tl_tlp_seq_item extends uvm_sequence_item;
   //------------------------------------------------------------------
   // TLP Packet Fields (captured from tl_tx_o / tl_rx_i)
   //------------------------------------------------------------------
-  
+  static int item_count = 0;
+  int item_id;
   // Raw TLP data stream
   rand bit [127:0] data_beats[$];  // Queue of 128-bit beats
   rand bit         sop;             // Start of Packet
@@ -37,6 +38,7 @@ class tl_tlp_seq_item extends uvm_sequence_item;
   //------------------------------------------------------------------
   
   `uvm_object_utils_begin(tl_tlp_seq_item)
+    `uvm_field_int(item_id,      UVM_ALL_ON | UVM_DEC)
     `uvm_field_queue_int(data_beats, UVM_ALL_ON | UVM_HEX)
     `uvm_field_int(sop,           UVM_ALL_ON)
     `uvm_field_int(eop,           UVM_ALL_ON)
@@ -56,13 +58,15 @@ class tl_tlp_seq_item extends uvm_sequence_item;
   
   function new(string name = "tl_tlp_seq_item");
     super.new(name);
+    item_count++;
+    item_id = item_count;
   endfunction
   
   //------------------------------------------------------------------
   // Parse from tl_data_t stream
   //------------------------------------------------------------------
   
-  function void parse_from_stream(tl_pkg::tl_data_t beat);
+  function void parse_from_stream(tl_pkg::tl_stream_t beat);
     data_beats.push_back(beat.data);
     
     // If this is the first beat (header), parse header fields
@@ -93,7 +97,7 @@ class tl_tlp_seq_item extends uvm_sequence_item;
     fmt      = dw0[7:5];
     pkt_type = dw0[4:0];
     tc       = dw0[14:12];
-    length   = {dw0[31:25], dw0[17:16]};
+    length   = {dw0[17:16], dw0[31:24]};
     
     // DW1: Requester ID, Tag, Byte Enables
     requester_id = {dw1[7:0], dw1[15:8]};
@@ -104,17 +108,18 @@ class tl_tlp_seq_item extends uvm_sequence_item;
     // DW2 & DW3: Address (depends on 3DW vs 4DW format)
     if (fmt[0]) begin
       // 4DW header (64-bit address)
-      address = {dw2, dw3[31:2], 2'b00};
+      address = {dw2[7:0], dw2[15:8], dw2[23:16], dw2[31:24], dw3[7:0], dw3[15:8], dw3[23:16], dw3[31:26], 2'b00};
     end
     else begin
       // 3DW header (32-bit address)
-      address = {32'h0, dw2[31:2], 2'b00};
+      address = {32'h0, dw2[7:0], dw2[15:8], dw2[23:16], dw2[31:26], 2'b00};
       
       // For 3DW with data, DW3 is first data DW
       if (fmt[1]) begin  // Has data
         payload_data.push_back(dw3);
       end
     end
+
     
     // For Completions, parse completion-specific fields
     if (pkt_type inside {5'b01010, 5'b01011}) begin  // Cpl, CplD
@@ -141,9 +146,15 @@ class tl_tlp_seq_item extends uvm_sequence_item;
       default:  return $sformatf("Type_%02h", pkt_type);
     endcase
   endfunction
+
+  function int get_pkt_num();
+    return item_id;
+  endfunction
   
   function void do_print(uvm_printer printer);
     super.do_print(printer);
+    printer.print_field("Item ID", item_id, 32, UVM_DEC);
+    printer.print_field("Total Items Created", item_count, 32, UVM_DEC);
     printer.print_string("TLP Type", get_type_str());
     printer.print_field("Format", fmt, 3, UVM_BIN);
     printer.print_field("Length (DW)", length, 10, UVM_DEC);

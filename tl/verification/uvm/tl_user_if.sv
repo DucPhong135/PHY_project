@@ -46,6 +46,8 @@ interface tl_user_if(
   task send_command(input tl_cmd_t hw_cmd);
     
     // Wait for ready
+    @(posedge clk);
+    
     while (!cmd_ready) begin
       @(posedge clk);
     end

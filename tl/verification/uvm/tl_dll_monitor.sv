@@ -40,8 +40,8 @@ class tl_dll_monitor extends uvm_monitor;
         // End of packet
         if (vif.tl_tx_o.eop && tlp != null) begin
           tlp.eop = 1'b1;
-          `uvm_info("DLL_MON", $sformatf("Captured TLP: %s, Addr=0x%0h, Len=%0d", 
-                    tlp.get_type_str(), tlp.address, tlp.length), UVM_MEDIUM)
+          `uvm_info("TX_MON", $sformatf("Pkt#: %0d", tlp.get_pkt_num()), UVM_LOW);
+          tlp.print();
           tlp = null;
         end
       end

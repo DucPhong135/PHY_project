@@ -47,19 +47,15 @@ module tl_tx_queue_router
     selected_queue = QUEUE_NONE;
     
     if (pkt_valid_i && pkt_i.sop) begin
-      // Posted transactions (MWr, CfgWr with data)
-      if (fmt[1] == 1'b1) begin  // Fmt[1]=1 means with data
-        case (pkt_type)
-          5'b00000: selected_queue = QUEUE_POSTED;  // MWr
-          5'b00100: selected_queue = QUEUE_POSTED;  // CfgWr
-          default:  selected_queue = QUEUE_NONE;
-        endcase
+      // Posted transactions (MWr)
+      if (fmt[1] == 1'b1 && pkt_type == 5'b00000) begin  // Fmt[1]=1 means with data
+        selected_queue = QUEUE_POSTED;
       end
-      // Non-Posted transactions (MRd, CfgRd - no data)
+      // Non-Posted transactions (MRd, CfgRd - no data, CfgWr - data)
       else if (fmt[1] == 1'b0) begin  // Fmt[1]=0 means no data (reads)
         case (pkt_type)
           5'b00000: selected_queue = QUEUE_NP;      // MRd
-          5'b00100: selected_queue = QUEUE_NP;      // CfgRd
+          5'b00100: selected_queue = QUEUE_NP;      // CfgRd && CfgWr
           default:  selected_queue = QUEUE_NONE;
         endcase
       end
