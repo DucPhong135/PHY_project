@@ -1,0 +1,4 @@
+Add scoreboard for autochecking
+Create subsequence for easier monitoring
+Start check for config request
+Create address space for local config space, map the request using that

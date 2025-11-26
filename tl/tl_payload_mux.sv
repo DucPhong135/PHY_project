@@ -282,9 +282,27 @@ module tl_payload_mux
       end
 
       DATA_BEAT: begin
+        if(dw_this_beat == 3'd0) begin
+          // No data to send
+          tx_pkt_valid_o      = 1'b0;
+          wdata_ready_o       = 1'b0;
+          wdata_consumed_dw_o = 2'd0;
+        end
+        else  
         if(is_3dw_header) begin
-          tx_pkt_o.data[95:0] = hdr_3dw_data_reg; // First data DW from 3DW header beat
-          tx_pkt_o.data[127:96] = wdata_i[31:0]; // Next data DW
+          if(is_last_beat) begin
+            case (dw_this_beat)
+              3'd1: tx_pkt_o.data   = {96'b0,hdr_3dw_data_reg[31:0]};
+              3'd2: tx_pkt_o.data   = {64'b0,hdr_3dw_data_reg[63:0]};
+              3'd3: tx_pkt_o.data   = {32'b0,hdr_3dw_data_reg[95:0]};
+              3'd4: tx_pkt_o.data   = {wdata_i[31:0], hdr_3dw_data_reg[95:0]};
+              default: tx_pkt_o.data   = hdr_3dw_data_reg[31:0];
+            endcase
+          end
+          else begin
+            tx_pkt_o.data[95:0] = hdr_3dw_data_reg; // First data DW from 3DW header beat
+            tx_pkt_o.data[127:96] = wdata_i[31:0]; // Next data DW
+          end
           tx_pkt_o.sop          = 1'b0;
           tx_pkt_o.eop          = is_last_beat;
           tx_pkt_o.be           = be_this_beat;

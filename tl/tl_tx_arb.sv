@@ -97,12 +97,11 @@ logic [2:0] grant_state_reg;   // Registered grant for holding during transmissi
 tl_stream_t tl_hdr_o;
 
 logic posted_eligible;
-assign posted_eligible = ph_credit_ok_i && pkt_posted_valid_i && (!pkt_posted_i.data[126] || pd_credit_ok_i);
+assign posted_eligible = ph_credit_ok_i && pkt_posted_valid_i && (!pkt_posted_i.data[6] || pd_credit_ok_i);
 logic np_eligible;
-assign np_eligible = nph_credit_ok_i && pkt_np_valid_i && (!pkt_np_i.data[126] || npd_credit_ok_i);
+assign np_eligible = nph_credit_ok_i && pkt_np_valid_i && (!pkt_np_i.data[6] || npd_credit_ok_i);
 logic cpl_eligible;
-assign cpl_eligible = cplh_credit_ok_i && pkt_cpl_valid_i && (!pkt_cpl_i.data[126] || cpld_credit_ok_i);
-
+assign cpl_eligible = cplh_credit_ok_i && pkt_cpl_valid_i && (!pkt_cpl_i.data[6] || cpld_credit_ok_i);
 always_ff @(posedge clk or negedge rst_n) begin
   if(!rst_n) begin
     fsm_state <= IDLE;
@@ -222,7 +221,13 @@ always_comb begin
       pkt_np_ready_o     = tl_tx_ready_i;
       pkt_cpl_ready_o    = tl_tx_ready_i;
     end
-    HDR, DATA: begin
+    HDR: begin
+      // During header transmission, only the granted source gets ready signal
+      pkt_posted_ready_o = 1'b0;
+      pkt_np_ready_o     = 1'b0;
+      pkt_cpl_ready_o    = 1'b0;
+    end 
+    DATA: begin
       // During transmission, only the granted source gets ready signal
       pkt_posted_ready_o = (grant_state == GRANT_P) && tl_tx_ready_i;
       pkt_np_ready_o     = (grant_state == GRANT_NP) && tl_tx_ready_i;
