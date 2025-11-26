@@ -182,9 +182,9 @@ always_ff @(posedge clk or negedge rst_n) begin
                     // Byte Enables
                     case (cmd_reg.addr[1:0])
                         2'b00: hdr_o[63:56] <= {4'b1111, 4'b1111};
-                        2'b01: hdr_o[63:56] <= {4'b0001, 4'b1110};
-                        2'b10: hdr_o[63:56] <= {4'b0011, 4'b1100};
-                        2'b11: hdr_o[63:56] <= {4'b0111, 4'b1000};
+                        2'b01: hdr_o[63:56] <= {4'b1111, 4'b1110};
+                        2'b10: hdr_o[63:56] <= {4'b1111, 4'b1100};
+                        2'b11: hdr_o[63:56] <= {4'b1111, 4'b1000};
                         default: hdr_o[63:56] <= {4'b1111, 4'b1111};
                     endcase
                     hdr_o[71:64]   <= cmd_reg.addr[63:56];
@@ -207,9 +207,9 @@ always_ff @(posedge clk or negedge rst_n) begin
                     hdr_o[55:48]   <= cmd_tag_reg;              // Byte 6: Tag (0 for posted writes)
                     case (cmd_reg.addr[1:0])
                         2'b00: hdr_o[63:56] <= {4'b1111, 4'b1111};
-                        2'b01: hdr_o[63:56] <= {4'b0001, 4'b1110};
-                        2'b10: hdr_o[63:56] <= {4'b0011, 4'b1100};
-                        2'b11: hdr_o[63:56] <= {4'b0111, 4'b1000};
+                        2'b01: hdr_o[63:56] <= {4'b1111, 4'b1110};
+                        2'b10: hdr_o[63:56] <= {4'b1111, 4'b1100};
+                        2'b11: hdr_o[63:56] <= {4'b1111, 4'b1000};
                         default: hdr_o[63:56] <= {4'b1111, 4'b1111};
                     endcase
                     hdr_o[71:64]   <= cmd_reg.addr[63:56];
@@ -233,9 +233,9 @@ always_ff @(posedge clk or negedge rst_n) begin
                     hdr_o[55:48]   <= cmd_tag_reg;              // Byte 6: Tag (0 for posted writes)
                     case (cmd_reg.addr[1:0])
                         2'b00: hdr_o[63:56] <= {4'b1111, 4'b1111};
-                        2'b01: hdr_o[63:56] <= {4'b0001, 4'b1110};
-                        2'b10: hdr_o[63:56] <= {4'b0011, 4'b1100};
-                        2'b11: hdr_o[63:56] <= {4'b0111, 4'b1000};
+                        2'b01: hdr_o[63:56] <= {4'b1111, 4'b1110};
+                        2'b10: hdr_o[63:56] <= {4'b1111, 4'b1100};
+                        2'b11: hdr_o[63:56] <= {4'b1111, 4'b1000};
                         default: hdr_o[63:56] <= {4'b1111, 4'b1111};
                     endcase
                     hdr_o[71:64]   <= cmd_reg.addr[31:24];            // Byte 8: Address[31:24]
@@ -254,9 +254,9 @@ always_ff @(posedge clk or negedge rst_n) begin
                     hdr_o[55:48]   <= cmd_tag_reg;              // Byte 6: Tag (0 for posted writes)
                     case (cmd_reg.addr[1:0])
                         2'b00: hdr_o[63:56] <= {4'b1111, 4'b1111};
-                        2'b01: hdr_o[63:56] <= {4'b0001, 4'b1110};
-                        2'b10: hdr_o[63:56] <= {4'b0011, 4'b1100};
-                        2'b11: hdr_o[63:56] <= {4'b0111, 4'b1000};
+                        2'b01: hdr_o[63:56] <= {4'b1111, 4'b1110};
+                        2'b10: hdr_o[63:56] <= {4'b1111, 4'b1100};
+                        2'b11: hdr_o[63:56] <= {4'b1111, 4'b1000};
                         default: hdr_o[63:56] <= {4'b1111, 4'b1111};
                     endcase
                     hdr_o[71:64]   <= cmd_reg.addr[31:24];

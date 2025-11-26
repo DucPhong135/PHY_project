@@ -39,14 +39,6 @@ class tl_user_seq_item extends uvm_sequence_item;
     length_dw inside {[1:1024]};  // Updated to match tl_cmd_t range
   }
   
-  // Memory address constraints (only valid for CMD_MEM)
-  constraint valid_addr_c {
-    if (trans_type == CMD_MEM) {
-      addr[1:0] == 2'b00;  // DW aligned
-    } else {
-      addr == 64'h0;       // Don't care for config
-    }
-  }
   
   // Config register constraints (only valid for CMD_CFG)
   constraint valid_cfg_c {

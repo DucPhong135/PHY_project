@@ -38,6 +38,7 @@ module tl_payload_mux
   logic [11:0] dw_remaining;
 
   logic [127:0] hdr_reg;
+  logic [95:0] hdr_3dw_data_reg;
   
   assign dw_remaining = total_data_dw - data_dw_sent;
 
@@ -62,8 +63,24 @@ module tl_payload_mux
   
   // For 3DW header with data, first data beat takes 1 DW (packed with header)
   // For 4DW header or subsequent beats, take up to 4 DWs
-  assign dw_this_beat = (is_3dw_header && is_first_data_beat) ? 12'd1 :
-                        (dw_remaining >= 12'd4) ? 12'd4 : dw_remaining;
+  always_comb begin
+    if (is_3dw_header && is_first_data_beat) begin
+      dw_this_beat = (dw_remaining >= 12'd1) ? 3'd1 : 3'd0;
+    end
+    else begin
+      if (dw_remaining >= 12'd4)
+        dw_this_beat = 3'd4;
+      else if (dw_remaining == 12'd3)
+        dw_this_beat = 3'd3;
+      else if (dw_remaining == 12'd2)
+        dw_this_beat = 3'd2;
+      else if (dw_remaining == 12'd1)
+        dw_this_beat = 3'd1;
+      else
+        dw_this_beat = 3'd0;
+    end
+  end
+
   assign is_last_beat = (data_dw_sent + dw_this_beat >= total_data_dw);
 
   // Byte enables for current beat
@@ -112,7 +129,10 @@ module tl_payload_mux
       end
 
       DATA_BEAT: begin
-        if (tx_pkt_ready_i && wdata_valid_i && is_last_beat) begin
+        if (is_3dw_header && tx_pkt_ready_i && is_last_beat) begin
+          next_state = IDLE;
+        end
+        else if (!is_3dw_header && tx_pkt_ready_i && is_last_beat && wdata_valid_i) begin
           next_state = IDLE;
         end
         else begin
@@ -159,9 +179,15 @@ module tl_payload_mux
       data_dw_sent <= 12'd0;
     end
     else begin
-      if (state == HDR_BEAT && next_state == DATA_BEAT) begin
-        if (is_3dw_header && wdata_valid_i && tx_pkt_ready_i) begin
+      if(state == IDLE) begin
+        data_dw_sent <= 12'd0;
+      end
+      else if (state == HDR_BEAT && next_state == DATA_BEAT) begin
+        if (is_3dw_header && wdata_valid_i && tx_pkt_ready_i && total_data_dw != 12'd0) begin
           data_dw_sent <= data_dw_sent + 12'd1; // First data DW packed with header
+        end
+        else begin
+          data_dw_sent <= data_dw_sent;
         end
       end
       else if (state == DATA_BEAT && next_state == DATA_BEAT) begin
@@ -180,18 +206,25 @@ module tl_payload_mux
     end
   end
 
-  always_latch begin
-    if (is_3dw_header && state == HDR_BEAT) begin
+  always_comb begin
+    if(data_dw_sent == 12'd0) begin
       is_first_data_beat = 1'b1;
     end
-    else if (state == DATA_BEAT && !is_3dw_header) begin
-      if(data_dw_sent == 12'd0)
-        is_first_data_beat = 1'b1;
-      else
-        is_first_data_beat = 1'b0;
+    else begin
+      is_first_data_beat = 1'b0;
     end
   end
   
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      hdr_3dw_data_reg <= '0;
+    end
+    else begin
+      if (is_3dw_header && wdata_valid_i) begin
+        hdr_3dw_data_reg <= wdata_i[127:32]; // Capture first data DW packed with 3DW header
+      end
+    end
+  end
 
   always_comb begin
     // Defaults
@@ -203,7 +236,8 @@ module tl_payload_mux
       HDR_BEAT: begin
         if (is_3dw_header && (total_data_dw != 12'd0)) begin
           if(hdr_reg[6] == 1'b1) begin // Write request with 3DW header
-            tx_pkt_o.data       = {hdr_reg[95:0], wdata_i[31:0]};
+            tx_pkt_o.data[95:0]       = hdr_reg[95:0];
+            tx_pkt_o.data[127:96]     = wdata_i[31:0]; // First data DW packed
             tx_pkt_o.sop        = 1'b1;
             tx_pkt_o.eop        = (total_data_dw == 12'd0 || total_data_dw == 12'd1);
             tx_pkt_o.be         = (total_data_dw == 12'd1) ? {first_dw_be, 4'b1111} : 4'b1111;
@@ -214,7 +248,8 @@ module tl_payload_mux
             wdata_consumed_dw_o   = 2'd1;  // ← Only 1 DW consumed
           end
           else if(hdr_reg[6] == 1'b0) begin // Read request with 3DW header
-            tx_pkt_o.data       = {hdr_reg[95:0], 32'd0};
+            tx_pkt_o.data[95:0]       = hdr_reg[95:0];
+            tx_pkt_o.data[127:96]     = 32'h0; // No data for read
             tx_pkt_o.sop        = 1'b1;
             tx_pkt_o.eop        = 1'b1;
             tx_pkt_o.be         = 4'b1111;
@@ -226,7 +261,7 @@ module tl_payload_mux
         else begin
           // 4DW header
           if(hdr_i[6] == 1'b1) begin // Write request with 4DW header
-            tx_pkt_o.data       = hdr_i;
+            tx_pkt_o.data       = hdr_reg;
             tx_pkt_o.sop        = 1'b1;
             tx_pkt_o.eop        = (total_data_dw == 12'd0);
             tx_pkt_o.be         = 4'b1111;
@@ -235,7 +270,7 @@ module tl_payload_mux
             wdata_consumed_dw_o = 2'd0;  // ← No data consumed yet
           end
           else if(hdr_i[6] == 1'b0) begin // Read request with 4DW header
-            tx_pkt_o.data       = hdr_i;
+            tx_pkt_o.data       = hdr_reg;
             tx_pkt_o.sop        = 1'b1;
             tx_pkt_o.eop        = 1'b1;
             tx_pkt_o.be         = 4'b1111;
@@ -247,15 +282,33 @@ module tl_payload_mux
       end
 
       DATA_BEAT: begin
-        tx_pkt_o.data       = wdata_i;
-        tx_pkt_o.sop        = 1'b0;
-        tx_pkt_o.eop        = is_last_beat;
-        tx_pkt_o.be         = be_this_beat;
-        tx_pkt_o.is_dllp    = 1'b0;
-        tx_pkt_valid_o      = wdata_valid_i && tx_pkt_ready_i;
-        
-        wdata_ready_o       = tx_pkt_ready_i;
-        wdata_consumed_dw_o = dw_this_beat[1:0];  // ← 1-4 DWs consumed
+        if(is_3dw_header) begin
+          tx_pkt_o.data[95:0] = hdr_3dw_data_reg; // First data DW from 3DW header beat
+          tx_pkt_o.data[127:96] = wdata_i[31:0]; // Next data DW
+          tx_pkt_o.sop          = 1'b0;
+          tx_pkt_o.eop          = is_last_beat;
+          tx_pkt_o.be           = be_this_beat;
+          tx_pkt_o.is_dllp      = 1'b0;
+          if(is_last_beat) begin
+            tx_pkt_valid_o      = tx_pkt_ready_i;
+          end
+          else begin
+          tx_pkt_valid_o        = wdata_valid_i && tx_pkt_ready_i;
+          end
+          wdata_ready_o         = tx_pkt_ready_i;
+          wdata_consumed_dw_o   = dw_this_beat[1:0];
+        end
+        else begin
+          tx_pkt_o.data       = wdata_i;
+          tx_pkt_o.sop        = 1'b0;
+          tx_pkt_o.eop        = is_last_beat;
+          tx_pkt_o.be         = be_this_beat;
+          tx_pkt_o.is_dllp    = 1'b0;
+          tx_pkt_valid_o      = wdata_valid_i && tx_pkt_ready_i;
+          
+          wdata_ready_o       = tx_pkt_ready_i;
+          wdata_consumed_dw_o = dw_this_beat[1:0];  // ← 1-4 DWs consumed
+        end
       end
 
       default: begin

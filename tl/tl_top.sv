@@ -26,7 +26,7 @@ module tl_top #(
   input  logic       usr_cmd_valid_i,
   output logic       usr_cmd_ready_o,
 
-  input  tl_data_t   usr_wdata_i,
+  input  tl_data_t  usr_wdata_i,
   input  logic       usr_wvalid_i,
   output logic       usr_wready_o,
 
@@ -360,8 +360,8 @@ module tl_top #(
     .DEVICE_ID  (16'hABCD),
     .CLASS_CODE (24'h010601),  // Bridge, PCI-to-PCI
     .REV_ID     (8'h01),
-    .DEV_NUM    (5'd0),
-    .FUNC_NUM   (3'd0)
+    .DEV_NUM    (5'd10),
+    .FUNC_NUM   (3'd4)
   ) u_cfg_space (
     .clk              (clk),
     .rst_n            (rst_n),
@@ -390,7 +390,15 @@ module tl_top #(
   end
 
   // TX Arbiter - Arbitrates between Posted, Non-Posted, and Completion packets
-  tl_tx_arb u_tx_arb (
+  tl_tx_arb #(
+    .PH_WIDTH(10),
+    .PD_WIDTH(10),
+    .NPH_WIDTH(10),
+    .NPD_WIDTH(10),
+    .CPLH_WIDTH(10),
+    .CPLD_WIDTH(10)
+  )
+  u_tx_arb (
     .clk               (clk),
     .rst_n             (rst_n),
     

@@ -49,6 +49,7 @@ class tl_tlp_seq_item extends uvm_sequence_item;
     `uvm_field_int(tag,           UVM_ALL_ON | UVM_HEX)
     `uvm_field_int(address,       UVM_ALL_ON | UVM_HEX)
     `uvm_field_int(first_be,      UVM_ALL_ON | UVM_BIN)
+    `uvm_field_int(last_be,       UVM_ALL_ON | UVM_BIN)
     `uvm_field_queue_int(payload_data, UVM_ALL_ON | UVM_HEX)
   `uvm_object_utils_end
   
@@ -153,15 +154,6 @@ class tl_tlp_seq_item extends uvm_sequence_item;
   
   function void do_print(uvm_printer printer);
     super.do_print(printer);
-    printer.print_field("Item ID", item_id, 32, UVM_DEC);
-    printer.print_field("Total Items Created", item_count, 32, UVM_DEC);
-    printer.print_string("TLP Type", get_type_str());
-    printer.print_field("Format", fmt, 3, UVM_BIN);
-    printer.print_field("Length (DW)", length, 10, UVM_DEC);
-    printer.print_field("Address", address, 64, UVM_HEX);
-    printer.print_field("Tag", tag, 8, UVM_HEX);
-    printer.print_field("Requester ID", requester_id, 16, UVM_HEX);
-    printer.print_field("Payload DWs", payload_data.size(), 32, UVM_DEC);
   endfunction
   
   //------------------------------------------------------------------

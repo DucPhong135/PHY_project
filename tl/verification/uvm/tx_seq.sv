@@ -8,7 +8,7 @@ class tx_seq extends uvm_sequence #(tl_user_seq_item);
   `uvm_object_utils(tx_seq)
 
   // Configuration
-  int num_transactions = 10;
+  int num_transactions = 5;
   
   // constraint num_trans_c {
   //   num_transactions inside {[5:7]};
@@ -29,10 +29,68 @@ class tx_seq extends uvm_sequence #(tl_user_seq_item);
     repeat (num_transactions) begin
       `uvm_do_with(req, {
         trans_type == tl_pkg::CMD_MEM;
-        is_write   == 1'b0;           // Memory write
+        is_write   == 1'b0;           // Memory read
         length_dw  inside {[1:16]};   // Small transfers
+        addr[1:0] == 2'b00;          // Aligned address
       });
+      `uvm_info("TX_SEQ", $sformatf("Sent packet: Addr=0x%0h, Write = %0b, Len=%0d DW, Data[0]=0x%0h",
+                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_LOW)
+    end
 
+    repeat (num_transactions) begin
+      `uvm_do_with(req, {
+        trans_type == tl_pkg::CMD_MEM;
+        is_write == 1'b1;
+        length_dw inside {[4:8]};
+        addr[1:0] == 2'b00;
+      });
+      `uvm_info("TX_SEQ", $sformatf("Sent packet: Addr=0x%0h, Write = %0b, Len=%0d DW, Data[0]=0x%0h",
+                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_LOW)
+    end
+
+    repeat (num_transactions) begin
+      `uvm_do_with(req, {
+        trans_type == tl_pkg::CMD_MEM;
+        is_write == 1'b0;
+        length_dw inside {[1:16]};
+        addr[1:0] != 2'b00;  // Misaligned address
+      });
+      `uvm_info("TX_SEQ", $sformatf("Sent packet: Addr=0x%0h, Write = %0b, Len=%0d DW, Data[0]=0x%0h",
+                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_LOW)
+    end
+
+    repeat (num_transactions) begin
+      `uvm_do_with(req, {
+        trans_type == tl_pkg::CMD_MEM;
+        is_write == 1'b1;
+        length_dw inside {[1:8]};
+        addr[1:0] != 2'b00;
+      });
+      `uvm_info("TX_SEQ", $sformatf("Sent packet: Addr=0x%0h, Write = %0b, Len=%0d DW, Data[0]=0x%0h",
+                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_LOW)
+    end
+
+
+    repeat (num_transactions) begin
+      `uvm_do_with(req, {
+        trans_type == tl_pkg::CMD_MEM;
+        is_write == 1'b0;
+        length_dw inside {[1:16]};
+        addr[1:0] != 2'b00;
+        addr[63:32] == 32'h0000_0000;
+      });
+      `uvm_info("TX_SEQ", $sformatf("Sent packet: Addr=0x%0h, Write = %0b, Len=%0d DW, Data[0]=0x%0h",
+                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_LOW)
+    end
+
+    repeat (num_transactions) begin
+      `uvm_do_with(req, {
+        trans_type == tl_pkg::CMD_MEM;
+        is_write == 1'b1;
+        length_dw inside {[4:8]};
+        addr[1:0] != 2'b00;
+        addr[63:32] == 32'h0000_0000;
+      });
       `uvm_info("TX_SEQ", $sformatf("Sent packet: Addr=0x%0h, Write = %0b, Len=%0d DW, Data[0]=0x%0h",
                 req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_LOW)
     end
