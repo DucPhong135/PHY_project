@@ -25,6 +25,7 @@ module tl_tx_queue_router
 
 );
 
+
   // ========== Queue Type Selection ==========
   typedef enum logic [1:0] {
     QUEUE_POSTED = 2'd0,
@@ -48,17 +49,25 @@ module tl_tx_queue_router
     
     if (pkt_valid_i && pkt_i.sop) begin
       // Posted transactions (MWr)
-      if (fmt[1] == 1'b1 && pkt_type == 5'b00000) begin  // Fmt[1]=1 means with data
-        selected_queue = QUEUE_POSTED;
-      end
-      // Non-Posted transactions (MRd, CfgRd - no data, CfgWr - data)
-      else if (fmt[1] == 1'b0) begin  // Fmt[1]=0 means no data (reads)
-        case (pkt_type)
-          5'b00000: selected_queue = QUEUE_NP;      // MRd
-          5'b00100: selected_queue = QUEUE_NP;      // CfgRd && CfgWr
-          default:  selected_queue = QUEUE_NONE;
-        endcase
-      end
+      case({fmt, pkt_type})
+        8'b010_00000, 8'b011_00000: begin
+          selected_queue = QUEUE_POSTED;
+        end
+
+        // Non-Posted transactions (MRd)
+        8'b000_00000, 8'b001_00000: begin
+          selected_queue = QUEUE_NP;
+        end
+        8'b000_00100: begin
+          selected_queue = QUEUE_NP;
+        end
+        8'b010_00100: begin
+          selected_queue = QUEUE_POSTED;
+        end
+        default: begin
+          selected_queue = QUEUE_NONE;
+        end
+      endcase
     end
   end
 

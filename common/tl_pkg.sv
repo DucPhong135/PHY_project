@@ -78,12 +78,11 @@ typedef struct packed {
   logic [15:0] requester_id;
   logic [TAG_W-1:0] tag;
   logic [11:0] byte_count;
-  logic [6:0]  lower_addr;
+  logic [63:0]  addr;
   tl_cpl_status_e  cpl_status; // SC=0, UR=1
   logic        has_data;   // 1 = CplD, 0 = Cpl
   logic [3:0]  first_be;         // byte enables for payload
   logic [3:0]  last_be;          // byte enables for payload
-  logic [255:0] data;      // completion payload (optional)
 } cpl_gen_cmd_t;
 
 typedef struct packed {

@@ -23,6 +23,10 @@ package tl_uvm_pkg;
   `include "tl_tlp_seq_item.sv"
   
   // 2. Sequences
+  `include "tx_mem_read_seq.sv"
+  `include "tx_mem_write_seq.sv"
+  `include "tx_cfg_read_seq.sv"
+  `include "tx_cfg_write_seq.sv"
   `include "tx_seq.sv"
   // `include "tl_mem_wr_seq.sv"
   // `include "tl_mem_rd_seq.sv"
@@ -42,10 +46,11 @@ package tl_uvm_pkg;
   `include "tl_dll_agent.sv"
   
 //  // 7. Scoreboard
-//  `include "tl_scoreboard.sv"
+  `include "tx_scoreboard.sv"
   
   // 8. Environment
-  `include "tl_env.sv"
+  `include "tl_user_env.sv"
+  `include "tl_dll_env.sv"
 
   `include "tl_tx_tb.sv"
   

@@ -3,7 +3,6 @@
 
 class tl_user_seq_item extends uvm_sequence_item;
   
-  `uvm_object_utils(tl_user_seq_item)
   
   //------------------------------------------------------------------
   // Command Fields (matching tl_cmd_t structure)
@@ -27,6 +26,18 @@ class tl_user_seq_item extends uvm_sequence_item;
   // Data Payload (for writes)
   //------------------------------------------------------------------
   rand bit [31:0] data_payload[$];  // Queue of DWs
+
+  `uvm_object_utils_begin(tl_user_seq_item)
+    `uvm_field_enum(tl_cmd_type_e, trans_type, UVM_ALL_ON)
+    `uvm_field_int(length_dw, UVM_ALL_ON)
+    `uvm_field_int(is_write, UVM_ALL_ON)
+    `uvm_field_int(addr, UVM_ALL_ON)
+    `uvm_field_int(bus, UVM_ALL_ON)
+    `uvm_field_int(device, UVM_ALL_ON)
+    `uvm_field_int(function_num, UVM_ALL_ON)
+    `uvm_field_int(reg_num, UVM_ALL_ON)
+    `uvm_field_queue_int(data_payload, UVM_ALL_ON)
+  `uvm_object_utils_end
   
   //------------------------------------------------------------------
   // Constraints
@@ -43,7 +54,6 @@ class tl_user_seq_item extends uvm_sequence_item;
   // Config register constraints (only valid for CMD_CFG)
   constraint valid_cfg_c {
     if (trans_type == CMD_CFG) {
-      reg_num[1:0] == 2'b00;  // DWORD aligned
       bus inside {[0:255]};
       device inside {[0:31]};
       function_num inside {[0:7]};
@@ -122,22 +132,6 @@ class tl_user_seq_item extends uvm_sequence_item;
   //------------------------------------------------------------------
   function void do_print(uvm_printer printer);
     super.do_print(printer);
-    printer.print_string("Type", trans_type.name());
-    printer.print_field("Is Write", is_write, 1, UVM_BIN);
-    printer.print_field("Length (DW)", length_dw, 10, UVM_DEC);
-    
-    if (trans_type == CMD_MEM) begin
-      printer.print_field("Address", addr, 64, UVM_HEX);
-    end else begin
-      printer.print_field("Bus", bus, 8, UVM_HEX);
-      printer.print_field("Device", device, 5, UVM_HEX);
-      printer.print_field("Function", function_num, 3, UVM_HEX);
-      printer.print_field("Reg Num", reg_num, 10, UVM_HEX);
-    end
-    
-    if (is_write) begin
-      printer.print_field("Data DWs", data_payload.size(), 32, UVM_DEC);
-    end
   endfunction
   
   //------------------------------------------------------------------
@@ -187,6 +181,10 @@ class tl_user_seq_item extends uvm_sequence_item;
     result &= (data_payload == rhs_.data_payload);
     
     return result;
+  endfunction
+
+  function tl_user_seq_item get_current_command();
+    return this;
   endfunction
 
 endclass : tl_user_seq_item

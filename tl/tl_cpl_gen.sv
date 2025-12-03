@@ -2,7 +2,7 @@ module tl_cpl_gen
 import tl_pkg::*;
 #(
   parameter int TAG_W = 8,
-  parameter int MAX_CPLD_PAYLOAD = 8, // in DWs
+  parameter int MAX_CPLD_PAYLOAD = 1024, // in DWs
   parameter int CPLH_WIDTH = 8,
   parameter int CPLD_WIDTH = 12
 )(
@@ -20,6 +20,17 @@ import tl_pkg::*;
   input  logic                   credit_hdr_ok_i,
   input  logic                   credit_data_ok_i,
 
+    // --- Memory Read Request Interface (for incoming MRd from EP)
+  output logic [63:0]      memrd_addr_o,       // Address to read
+  output logic [9:0]       memrd_len_o,        // Length in DWs
+  output logic             memrd_valid_o,      // Request valid
+  input  logic             memrd_ready_i,      // Request accepted
+
+  // --- Memory Read Data Interface (data returned from memory)
+  input  logic [127:0]     memrd_data_i,       // Read data (128-bit per beat)
+  input  logic             memrd_data_valid_i, // Data valid
+  output logic             memrd_data_ready_o,  // Ready to accept data
+
   // Combined completion output (header + data in tl_stream_t format)
   output tl_pkg::tl_stream_t     cpl_pkt_o,
   output logic                   cpl_pkt_valid_o,
@@ -27,8 +38,9 @@ import tl_pkg::*;
 );
 
 
-typedef enum logic[2:0] {
+typedef enum logic [2:0] {
   FSM_IDLE,
+  FSM_MEM_REQ,
   FSM_GEN_HDR,
   FSM_SEND_HDR,
   FSM_WAIT_CRED,
@@ -42,9 +54,12 @@ tl_pkg::cpl_gen_cmd_t cpl_cmd_reg;
 // Beat counter for multi-beat data transfers
 logic [7:0] beat_count;  // Extended to 8 bits to support up to 255 beats
 logic [7:0] total_beats; // Extended to 8 bits for max payload support
+logic [7:0] data_beat_count;
 
 // Internal header register
 logic [127:0] cpl_hdr_reg;
+
+logic [95:0] mem_data_buf;
 
 
   // -----------------------------------------------------------------
@@ -67,122 +82,48 @@ logic [127:0] cpl_hdr_reg;
 
     case (fsm_state)
       FSM_IDLE: begin
-        if (cpl_cmd_valid_i) begin
+        if (cpl_cmd_valid_i && cpl_cmd_ready_o) begin
           fsm_next = FSM_GEN_HDR;
         end
       end
 
       FSM_GEN_HDR: begin
         // Decode the command and decide next steps
-       case (cpl_cmd_reg.cpl_status)
-                CPL_SUCCESS: begin
-                    if(cpl_cmd_reg.has_data && cpl_pkt_ready_i) begin
-                        if (credit_hdr_ok_i && credit_data_ok_i) begin
-                            fsm_next = FSM_SEND_HDR; // For write, go back to IDLE after sending header
-                        end else begin
-                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
-                        end
-                    end 
-                    else if(!cpl_cmd_reg.has_data && cpl_pkt_ready_i) begin
-                        if (credit_hdr_ok_i) begin
-                            fsm_next = FSM_SEND_HDR; // For read, go back to IDLE after sending header
-                        end else begin
-                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
-                        end
-                    end else begin
-                        fsm_next = FSM_GEN_HDR; // wait until credits are available
-                    end
-                end
-                CPL_UR: begin
-                    if(!cpl_cmd_reg.has_data && cpl_pkt_ready_i) begin
-                        if( credit_hdr_ok_i) begin
-                            fsm_next = FSM_SEND_HDR; // For read, go back to IDLE after sending header
-                        end else begin
-                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
-                        end
-                    end
-                    else begin
-                        fsm_next = FSM_SEND_HDR; // wait until credits are available
-                    end
-                end
-            endcase
+          if (credit_hdr_ok_i && credit_data_ok_i) begin
+            fsm_next = FSM_MEM_REQ;
+          end else begin
+            fsm_next = FSM_WAIT_CRED;
+          end
       end
-      FSM_SEND_HDR: begin
-         case (cpl_cmd_reg.cpl_status)
-                CPL_SUCCESS: begin
-                    if(cpl_cmd_reg.has_data && cpl_pkt_ready_i) begin
-                        if (credit_hdr_ok_i && credit_data_ok_i) begin
-                            fsm_next = FSM_SEND_DATA; // For write, go back to IDLE after sending header
-                        end else begin
-                            fsm_next = FSM_SEND_HDR; // wait until credits are available
-                        end
-                    end 
-                    else if(!cpl_cmd_reg.has_data && cpl_pkt_ready_i) begin
-                        if (credit_hdr_ok_i) begin
-                            fsm_next = FSM_IDLE; // For read, go back to IDLE after sending header
-                        end else begin
-                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
-                        end
-                    end else begin
-                        fsm_next = FSM_SEND_HDR; // wait until credits are available
-                    end
-                end
-                CPL_UR: begin
-                    if(!cpl_cmd_reg.has_data && cpl_pkt_ready_i) begin
-                        if( credit_hdr_ok_i) begin
-                            fsm_next = FSM_IDLE; // For read, go back to IDLE after sending header
-                        end else begin
-                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
-                        end
-                    end
-                    else begin
-                        fsm_next = FSM_SEND_HDR; // wait until credits are available
-                    end
-                end
-            endcase
+      FSM_MEM_REQ: begin
+        if (memrd_valid_o && memrd_ready_i) begin
+          fsm_next = FSM_SEND_HDR;
+        end
       end
+
       FSM_WAIT_CRED: begin
-       case (cpl_cmd_reg.cpl_status)
-                CPL_SUCCESS: begin
-                    if(cpl_cmd_reg.has_data && cpl_pkt_ready_i) begin
-                        if (credit_hdr_ok_i && credit_data_ok_i) begin
-                            fsm_next = FSM_SEND_HDR; // For write, go back to IDLE after sending header
-                        end else begin
-                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
-                        end
-                    end 
-                    else if(!cpl_cmd_reg.has_data && cpl_pkt_ready_i) begin
-                        if (credit_hdr_ok_i) begin
-                            fsm_next = FSM_SEND_HDR; // For read, go back to IDLE after sending header
-                        end else begin
-                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
-                        end
-                    end else begin
-                        fsm_next = FSM_WAIT_CRED; // wait until credits are available
-                    end
-                end
-                CPL_UR: begin
-                    if(!cpl_cmd_reg.has_data && cpl_pkt_ready_i) begin
-                        if(credit_hdr_ok_i) begin
-                            fsm_next = FSM_SEND_HDR; // For read, go back to IDLE after sending header
-                        end else begin
-                            fsm_next = FSM_WAIT_CRED; // wait until credits are available
-                        end
-                    end
-                    else begin
-                        fsm_next = FSM_WAIT_CRED; // wait until credits are available
-                    end
-                end
-            endcase
+        if (cpl_cmd_reg.has_data) begin
+            if (credit_hdr_ok_i && credit_data_ok_i) begin
+              fsm_next = FSM_SEND_HDR;
+            end
+        end else begin
+          if (credit_hdr_ok_i) begin
+            fsm_next = FSM_SEND_HDR;
+          end
+        end
+      end
+
+      FSM_SEND_HDR: begin
+        if (cpl_pkt_valid_o && cpl_pkt_ready_i) begin
+          if (cpl_cmd_reg.has_data && total_beats > 0) begin
+            fsm_next = FSM_SEND_DATA;
+          end
+        end
       end
       FSM_SEND_DATA: begin
-        if(cpl_pkt_valid_o && cpl_pkt_ready_i) begin
-          // Check if this is the last beat
-          if(beat_count == total_beats - 1) begin
-            fsm_next = FSM_IDLE;  // All beats sent
-          end
-          else begin
-            fsm_next = FSM_SEND_DATA;  // More beats to send
+        if (cpl_pkt_valid_o && cpl_pkt_ready_i) begin
+          if (beat_count >= total_beats - 1) begin
+            fsm_next = FSM_IDLE;  // All data sent, go back to IDLE
           end
         end
       end
@@ -200,22 +141,43 @@ always_ff @(posedge clk or negedge rst_n) begin
     cpl_cmd_reg <= '0;
     total_beats <= 8'd0;
   end else begin
-    if (cpl_cmd_valid_i && cpl_cmd_ready_o) begin
-      cpl_cmd_reg <= cpl_cmd_i;
-      // Calculate data beats needed (excluding header beat)
-      // Header beat includes 3DW header + first data DW (if has_data)
-      // Remaining data needs: (byte_count - 4) / 16 beats
-      if(cpl_cmd_i.has_data && cpl_cmd_i.byte_count > 4) begin
-        // Calculate additional beats needed for remaining data
-        // After packing first DW with header, remaining bytes need ceil((byte_count-4)/16)
-        total_beats <= ((cpl_cmd_i.byte_count - 12'd4 + 12'd15) >> 4);  // Divide by 16, ceiling
-      end
-      else begin
-        total_beats <= 8'd0;  // No additional data beats needed
-      end
+    if(fsm_state == FSM_IDLE && cpl_cmd_valid_i && cpl_cmd_ready_o) begin
+      cpl_cmd_reg <= cpl_cmd_i;  // Latch command on IDLE state
+    end
+    else if(fsm_state == FSM_GEN_HDR) begin
+      total_beats <= ((current_cpl_bytes - 12'd4 + 12'd15) >> 4); 
     end
   end
 end
+
+assign memrd_addr_o  = cpl_cmd_reg.addr;
+assign memrd_len_o   = total_beats; // Length in DWs
+assign memrd_valid_o = (fsm_state == FSM_MEM_REQ) && memrd_ready_i;
+
+
+always_comb begin
+  memrd_data_ready_o = 1'b0;
+  
+  case (fsm_state)
+    FSM_SEND_HDR:  memrd_data_ready_o = cpl_pkt_ready_i;
+    FSM_SEND_DATA: memrd_data_ready_o = cpl_pkt_ready_i;
+    default:       memrd_data_ready_o = 1'b0;
+  endcase
+end
+
+
+always_ff @(posedge clk or negedge rst_n) begin
+  if (!rst_n) begin
+    mem_data_buf       <= '0;
+  end else begin
+    if (fsm_state == FSM_SEND_HDR && memrd_data_valid_i) begin
+      mem_data_buf       <= memrd_data_i[127:32];
+    end else if (fsm_state == FSM_SEND_DATA && memrd_data_valid_i && memrd_data_ready_o) begin
+      mem_data_buf       <= memrd_data_i[127:32];
+    end
+  end
+end
+
 
 // Beat counter - tracks current beat being sent
 always_ff @(posedge clk or negedge rst_n) begin
@@ -245,14 +207,12 @@ always_ff @(posedge clk or negedge rst_n) begin
         // Set format field based on whether completion has data
         if(cpl_cmd_reg.has_data) begin
           cpl_hdr_reg[7:0] <= 8'h4A; // CPLD (Completion with Data)
-        end else begin
-          cpl_hdr_reg[7:0] <= 8'h0A; // CPL (Completion without Data)
         end
         
         // Common header fields
         cpl_hdr_reg[15:8] <= 8'h00; // Traffic Class 0, No Attributes
-        cpl_hdr_reg[23:16] <= {6'b0, DW_count[9:8]}; // Length MSBs
-        cpl_hdr_reg[31:24] <= DW_count[7:0]; // Length LSBs
+        cpl_hdr_reg[23:16] <= {6'b0, total_beats[9:8]}; // Length MSBs
+        cpl_hdr_reg[31:24] <= total_beats[7:0]; // Length LSBs
         cpl_hdr_reg[39:32] <= requester_id_i[15:8]; // Completer ID from command
         cpl_hdr_reg[47:40] <= requester_id_i[7:0]; // Completer ID from command
         cpl_hdr_reg[55:53] <= cpl_cmd_reg.cpl_status; // Completion Status
@@ -262,31 +222,12 @@ always_ff @(posedge clk or negedge rst_n) begin
         cpl_hdr_reg[71:64] <= cpl_cmd_reg.requester_id[15:8]; // Requester ID from command
         cpl_hdr_reg[79:72] <= cpl_cmd_reg.requester_id[7:0]; // Requester ID from command
         cpl_hdr_reg[87:80] <= cpl_cmd_reg.tag; // Tag from command
-        cpl_hdr_reg[94:88] <= cpl_cmd_reg.lower_addr; // Lower Address from command
+        cpl_hdr_reg[94:88] <= cpl_cmd_reg.addr[6:0]; // Lower Address from command
         cpl_hdr_reg[95] <= 1'b0; // Reserved
         cpl_hdr_reg[127:96] <= 32'h0000_0000; // Reserved
       end
     else if(cpl_cmd_reg.cpl_status == 3'd1) begin
       // Unsupported Completion Status - UR (always without data)
-      cpl_hdr_reg[7:0] <= 8'h0A; // CPL
-      cpl_hdr_reg[15:8] <= 8'h00; // Traffic Class 0, No Attributes
-      cpl_hdr_reg[23:16] <= {6'b0, DW_count[9:8]}; // Length MSBs
-      cpl_hdr_reg[31:24] <= DW_count[7:0]; // Length LSBs
-      cpl_hdr_reg[39:32] <= requester_id_i[15:8]; // Completer ID from command
-      cpl_hdr_reg[47:40] <= requester_id_i[7:0]; // Completer ID from command
-      cpl_hdr_reg[55:53] <= cpl_cmd_reg.cpl_status; // Completion Status
-      cpl_hdr_reg[52] <= 1'b0; // BCM
-      cpl_hdr_reg[51:48] <= cpl_cmd_reg.byte_count[11:8]; // Byte Count MSBs
-      cpl_hdr_reg[63:56] <= cpl_cmd_reg.byte_count[7:0]; // Byte Count LSBs
-      cpl_hdr_reg[71:64] <= cpl_cmd_reg.requester_id[15:8]; // Requester ID from command
-      cpl_hdr_reg[79:72] <= cpl_cmd_reg.requester_id[7:0]; // Requester ID from command
-      cpl_hdr_reg[87:80] <= cpl_cmd_reg.tag; // Tag from command
-      cpl_hdr_reg[94:88] <= cpl_cmd_reg.lower_addr; // Lower Address from command
-      cpl_hdr_reg[95] <= 1'b0; // Reserved
-      cpl_hdr_reg[127:96] <= 32'h0000_0000; // Reserved
-    end
-    else if(cpl_cmd_reg.cpl_status == 3'd2) begin
-      // Configuration Request Retry Status - CRS (always without data)
       cpl_hdr_reg[7:0] <= 8'h0A; // CPL
       cpl_hdr_reg[15:8] <= 8'h00; // Traffic Class 0, No Attributes
       cpl_hdr_reg[23:16] <= {6'b0, DW_count[9:8]}; // Length MSBs
@@ -318,11 +259,10 @@ always_comb begin
       // Completion headers are 3DW (12 bytes = 96 bits)
       // Pack 3DW header + first data DW in the 128-bit beat
       cpl_pkt_o.data[95:0] = cpl_hdr_reg[95:0];  // 3DW header
-      
+      cpl_pkt_o.sop = 1'b1;
       if(cpl_cmd_reg.has_data) begin
         // Pack first data DW at bits [127:96]
-        cpl_pkt_o.data[127:96] = cpl_cmd_reg.data[31:0];
-        cpl_pkt_o.sop = 1'b1;
+        cpl_pkt_o.data[127:96] = memrd_data_i[31:0];
         cpl_pkt_o.eop = (total_beats == 0);  // EOP if only header + 1 DW
         cpl_pkt_o.be = (total_beats == 0) ? cpl_cmd_reg.first_be : 4'hF;
         cpl_pkt_o.is_dllp = 1'b0;
@@ -338,33 +278,11 @@ always_comb begin
     end
     
     FSM_SEND_DATA: begin
-      // Send remaining data beats
-      // Note: First DW already sent with header, so start from data[63:32]
-      if(beat_count == 0) begin
-        // First data beat: DW1, DW2, DW3, DW4 from data[159:32]
-        cpl_pkt_o.data = cpl_cmd_reg.data[159:32];
-        cpl_pkt_o.sop = 1'b0;
-        cpl_pkt_o.eop = (total_beats == 1);  // EOP if only 1 more beat
-        cpl_pkt_o.be = (total_beats == 1) ? cpl_cmd_reg.last_be : 4'hF;
-        cpl_pkt_o.is_dllp = 1'b0;
-      end
-      else if(beat_count == 1) begin
-        // Second data beat: remaining DWs from data[255:160]
-        cpl_pkt_o.data[95:0] = cpl_cmd_reg.data[255:160];
-        cpl_pkt_o.data[127:96] = 32'h0;  // Pad if needed
-        cpl_pkt_o.sop = 1'b0;
-        cpl_pkt_o.eop = 1'b1;  // Last beat
-        cpl_pkt_o.be = cpl_cmd_reg.last_be;
-        cpl_pkt_o.is_dllp = 1'b0;
-      end
-      else begin
-        // For multi-beat transfers > 2 (would need streaming memory interface)
-        cpl_pkt_o.data = cpl_cmd_reg.data[159:32];  // Repeat pattern for now
-        cpl_pkt_o.sop = 1'b0;
-        cpl_pkt_o.eop = (beat_count == total_beats - 1);
-        cpl_pkt_o.be = (beat_count == total_beats - 1) ? cpl_cmd_reg.last_be : 4'hF;
-        cpl_pkt_o.is_dllp = 1'b0;
-      end
+      cpl_pkt_o.data = {memrd_data_i[31:0],mem_data_buf[95:0]}; // Pack data DWs, pad LSBs
+      cpl_pkt_o.sop = 1'b0;
+      cpl_pkt_o.eop = (beat_count >= total_beats - 1);
+      cpl_pkt_o.be = (beat_count >= total_beats - 1) ? cpl_cmd_reg.last_be : 4'hF;
+      cpl_pkt_o.is_dllp = 1'b0;
     end
     
     default: begin
@@ -377,17 +295,18 @@ end
 always_comb begin
   cpl_pkt_valid_o = 1'b0;
   
-  if (fsm_state == FSM_SEND_HDR) begin
-    // Header beat is valid when ready is high AND credits are available
-    if (cpl_cmd_reg.has_data) begin
-      cpl_pkt_valid_o = cpl_pkt_ready_i && credit_hdr_ok_i && credit_data_ok_i;
-    end else begin
-      cpl_pkt_valid_o = cpl_pkt_ready_i && credit_hdr_ok_i;
+  case (fsm_state)
+    FSM_SEND_HDR: begin
+      if (cpl_cmd_reg.has_data) begin
+        cpl_pkt_valid_o = memrd_data_valid_i && credit_hdr_ok_i && credit_data_ok_i;
+      end else begin
+        cpl_pkt_valid_o = credit_hdr_ok_i;
+      end
     end
-  end
-  else if (fsm_state == FSM_SEND_DATA) begin
-    // Data beats are valid when ready is high AND data credits available
-    cpl_pkt_valid_o = cpl_pkt_ready_i && credit_data_ok_i;
-  end
+    FSM_SEND_DATA: begin
+      cpl_pkt_valid_o = memrd_data_valid_i && credit_data_ok_i;
+    end
+    default: cpl_pkt_valid_o = 1'b0;
+  endcase
 end
 endmodule

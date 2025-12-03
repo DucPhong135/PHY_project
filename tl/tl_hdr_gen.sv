@@ -65,16 +65,16 @@ always_comb begin
             end
         end
         FSM_DECODE: begin
-            if (cmd_i.type_cmd == CMD_MEM || cmd_i.type_cmd == CMD_CFG) begin
+            if ((cmd_reg.type_cmd == CMD_MEM && !cmd_reg.wr_en) || cmd_reg.type_cmd == CMD_CFG) begin
                 fsm_next = FSM_WAIT_TAG;
+            end else if(cmd_reg.type_cmd == CMD_MEM && cmd_reg.wr_en) begin
+                fsm_next = FSM_GEN_HDR;
             end else begin
                 fsm_next = FSM_UNSUPPORTED; // Unsupported command type
             end
         end
         FSM_WAIT_TAG: begin
-            if(cmd_reg.wr_en == 1'b1) begin
-              fsm_next = FSM_GEN_HDR;
-            end else if (tag_valid_i) begin
+            if (tag_valid_i) begin
                 fsm_next = FSM_GEN_HDR;
             end
         end
@@ -171,14 +171,14 @@ always_ff @(posedge clk or negedge rst_n) begin
         if(cmd_reg.type_cmd == CMD_MEM) begin
             if(cmd_reg.addr[63:32] != 32'h0) begin
                 // 64-bit address
-                if(cmd_reg.wr_en == 1'b1) begin
+                if(cmd_reg.wr_en == 1'b1) begin // Write Command
                     hdr_o[7:0]     <= 8'h60;              // Byte 0: Fmt/Type
                     hdr_o[15:8]    <= {4'b0000, 1'b0, 1'b0, 2'b00};
                     hdr_o[23:16]   <= {1'b0, 1'b0, 2'b0, 2'b0, cmd_reg.len[9:8]};
                     hdr_o[31:24]   <= cmd_reg.len[7:0];
                     hdr_o[39:32]   <= REQUESTER_ID[15:8]; // Byte 4: Requester ID (Bus)
                     hdr_o[47:40]   <= REQUESTER_ID[7:0];  // Byte 5: Requester ID (Dev/Func)
-                    hdr_o[55:48]   <= cmd_tag_reg;              // Byte 6: Tag (0 for posted writes)
+                    hdr_o[55:48]   <= 8'h00;              // Byte 6: Tag
                     // Byte Enables
                     case (cmd_reg.addr[1:0])
                         2'b00: hdr_o[63:56] <= {4'b1111, 4'b1111};
@@ -196,7 +196,7 @@ always_ff @(posedge clk or negedge rst_n) begin
                     hdr_o[119:112] <= cmd_reg.addr[15:8];
                     hdr_o[127:120] <= {cmd_reg.addr[7:2], 2'b00};
                 end 
-            else begin
+                else begin
                     // Memory Read 64 (Fmt=0b001, Type=0b00000)
                     hdr_o[7:0]     <= 8'h20;                          // Byte 0: Fmt[7:5]=001, Type[4:0]=00000
                     hdr_o[15:8]    <= {4'b0000, 1'b0, 1'b0, 2'b00};
@@ -220,17 +220,17 @@ always_ff @(posedge clk or negedge rst_n) begin
                     hdr_o[111:104] <= cmd_reg.addr[23:16];
                     hdr_o[119:112] <= cmd_reg.addr[15:8];
                     hdr_o[127:120] <= {cmd_reg.addr[7:2], 2'b00};
-                end
-            end else begin
+            end
+        end else begin
                 // 32-bit address
-                if(cmd_reg.wr_en == 1'b1) begin
+                if(cmd_reg.wr_en == 1'b1) begin // Write Command
                     hdr_o[7:0]     <= 8'h40;                          // Byte 0: Fmt[7:5]=010, Type[4:0]=00000
                     hdr_o[15:8]    <= {4'b0000, 1'b0, 1'b0, 2'b00};
                     hdr_o[23:16]   <= {1'b0, 1'b0, 2'b0, 2'b0, cmd_reg.len[9:8]};
                     hdr_o[31:24]   <= cmd_reg.len[7:0];
                     hdr_o[39:32]   <= REQUESTER_ID[15:8]; // Byte 4: Requester ID (Bus)
                     hdr_o[47:40]   <= REQUESTER_ID[7:0];  // Byte 5: Requester ID (Dev/Func)
-                    hdr_o[55:48]   <= cmd_tag_reg;              // Byte 6: Tag (0 for posted writes)
+                    hdr_o[55:48]   <= 8'h00;              // Byte 6: Tag (0 for posted writes)
                     case (cmd_reg.addr[1:0])
                         2'b00: hdr_o[63:56] <= {4'b1111, 4'b1111};
                         2'b01: hdr_o[63:56] <= {4'b1111, 4'b1110};

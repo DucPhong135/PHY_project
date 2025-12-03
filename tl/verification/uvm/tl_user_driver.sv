@@ -45,7 +45,7 @@ class tl_user_driver extends uvm_driver #(tl_user_seq_item);
   //------------------------------------------------------------------
   task drive_transaction(tl_user_seq_item item);
     tl_cmd_t hw_cmd;
-    tl_data_t beat_queue[$];  // ✅ Use unpacked queue
+    tl_data_t beat_queue[$];
     
     hw_cmd = item.to_tl_cmd();
     
@@ -55,7 +55,7 @@ class tl_user_driver extends uvm_driver #(tl_user_seq_item);
     // Step 3: Send data (if write)
     if (item.is_write) begin
       // Convert payload to hardware beats
-      convert_to_beats(item, beat_queue);  // ✅ Pass queue by reference
+      convert_to_beats(item, beat_queue);
       vif.send_write_beats(beat_queue);
     end
     

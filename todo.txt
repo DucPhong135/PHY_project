@@ -1,4 +1,3 @@
-Add scoreboard for autochecking
-Create subsequence for easier monitoring
-Start check for config request
-Create address space for local config space, map the request using that
+complete cpl_gen, handle unaligned memory request
+start creating sequence for rx_path, only need to check for memory write and memory read request, and Completion, need to have memory array in testbench
+Create MMIO interface and address space for local config space, map the request using that

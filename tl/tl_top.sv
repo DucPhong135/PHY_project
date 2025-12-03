@@ -339,7 +339,7 @@ module tl_top #(
     .clk              (clk),
     .rst_n            (rst_n),
     
-    // Completion command input (from RX parser when MRd/CfgRd received)
+    // Completion command input (from RX parser when MRd received)
     .cpl_cmd_i        (cpl_gen_cmd),
     .cpl_cmd_valid_i  (cpl_gen_cmd_valid),
     .cpl_cmd_ready_o  (cpl_gen_cmd_ready),

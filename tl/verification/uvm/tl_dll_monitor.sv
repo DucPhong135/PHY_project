@@ -5,10 +5,15 @@
 class tl_dll_monitor extends uvm_monitor;
   
   `uvm_component_utils(tl_dll_monitor)
+
+  int pkt_received_count = 0;
   
-  virtual tl_dll_if vif;  
+  virtual tl_dll_if vif;
+  uvm_analysis_port #(tl_tlp_seq_item) monitor_ap;
+
   function new(string name = "tl_dll_monitor", uvm_component parent = null);
     super.new(name, parent);
+    monitor_ap = new("monitor_ap", this);
   endfunction
   
   function void build_phase(uvm_phase phase);
@@ -40,8 +45,12 @@ class tl_dll_monitor extends uvm_monitor;
         // End of packet
         if (vif.tl_tx_o.eop && tlp != null) begin
           tlp.eop = 1'b1;
-          `uvm_info("TX_MON", $sformatf("Pkt#: %0d", tlp.get_pkt_num()), UVM_LOW);
+          pkt_received_count++;
+          `uvm_info("TX_MON", $sformatf("Pkt#: %0d", pkt_received_count), UVM_LOW);
           tlp.print();
+
+          // Send to scoreboard
+          monitor_ap.write(tlp);
           tlp = null;
         end
       end

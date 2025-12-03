@@ -1,5 +1,5 @@
-`ifndef TOP_SV
-`define TOP_SV
+`ifndef UVM_TOP_SV
+`define UVM_TOP_SV
 
 `timescale 1ns/1ps
 
@@ -77,8 +77,8 @@ module top ();
   );
 
     initial begin
-        uvm_config_db#(virtual tl_user_if)::set(null, "uvm_test_top.tx_tb.env.user_agent.*", "user_vif", user_if);
-        uvm_config_db#(virtual tl_dll_if)::set(null, "uvm_test_top.tx_tb.env.dll_agent.*", "dll_vif", dll_if);
+        uvm_config_db#(virtual tl_user_if)::set(null, "uvm_test_top.tx_tb.user_env.user_agent.*", "user_vif", user_if);
+        uvm_config_db#(virtual tl_dll_if)::set(null, "uvm_test_top.tx_tb.dll_env.dll_agent.*", "dll_vif", dll_if);
         run_test("tl_tx_test");
     end
 

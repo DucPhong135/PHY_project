@@ -20,7 +20,7 @@ class tl_tx_test extends uvm_test;
     super.build_phase(phase);
     tx_tb = tl_tx_tb::type_id::create("tx_tb", this);
 
-    uvm_config_db#(uvm_object_wrapper)::set(this, "tx_tb.env.user_agent.user_sequencer.run_phase", "default_sequence", tx_seq::get_type());
+    uvm_config_db#(uvm_object_wrapper)::set(this, "tx_tb.user_env.user_agent.user_sequencer.run_phase", "default_sequence", tx_seq::get_type());
   endfunction : build_phase
   
   function void end_of_elaboration_phase(uvm_phase phase);

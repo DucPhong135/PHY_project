@@ -7,8 +7,6 @@ class tl_tlp_seq_item extends uvm_sequence_item;
   //------------------------------------------------------------------
   // TLP Packet Fields (captured from tl_tx_o / tl_rx_i)
   //------------------------------------------------------------------
-  static int item_count = 0;
-  int item_id;
   // Raw TLP data stream
   rand bit [127:0] data_beats[$];  // Queue of 128-bit beats
   rand bit         sop;             // Start of Packet
@@ -38,7 +36,6 @@ class tl_tlp_seq_item extends uvm_sequence_item;
   //------------------------------------------------------------------
   
   `uvm_object_utils_begin(tl_tlp_seq_item)
-    `uvm_field_int(item_id,      UVM_ALL_ON | UVM_DEC)
     `uvm_field_queue_int(data_beats, UVM_ALL_ON | UVM_HEX)
     `uvm_field_int(sop,           UVM_ALL_ON)
     `uvm_field_int(eop,           UVM_ALL_ON)
@@ -59,15 +56,13 @@ class tl_tlp_seq_item extends uvm_sequence_item;
   
   function new(string name = "tl_tlp_seq_item");
     super.new(name);
-    item_count++;
-    item_id = item_count;
   endfunction
   
   //------------------------------------------------------------------
   // Parse from tl_data_t stream
   //------------------------------------------------------------------
   
-  function void parse_from_stream(tl_pkg::tl_stream_t beat);
+  function void parse_from_stream(tl_stream_t beat);
     data_beats.push_back(beat.data);
     
     // If this is the first beat (header), parse header fields
@@ -135,21 +130,15 @@ class tl_tlp_seq_item extends uvm_sequence_item;
   //------------------------------------------------------------------
   
   function string get_type_str();
-    case (pkt_type)
-      5'b00000: return "MRd";
-      5'b00001: return "MRd (locked)";
-      5'b00010: return "MWr";
-      5'b00011: return "MWr (locked)";
-      5'b00100: return "IORd";
-      5'b00110: return "IOWr";
-      5'b01010: return "Cpl";
-      5'b01011: return "CplD";
+    case ({fmt,pkt_type})
+      8'b000_00000, 8'b001_00000: return "MRd";
+      8'b010_00000, 8'b011_00000: return "MWr";
+      8'b000_00100: return "CfgRd0";
+      8'b010_00100: return "CfgWr0";
+      8'b000_01010: return "Cpl";
+      8'b010_01011: return "CplD";
       default:  return $sformatf("Type_%02h", pkt_type);
     endcase
-  endfunction
-
-  function int get_pkt_num();
-    return item_id;
   endfunction
   
   function void do_print(uvm_printer printer);
@@ -314,6 +303,7 @@ function bit compare_header(tl_user_seq_item cmd);
   
   return match;
 endfunction : compare_header
+
 
 endclass : tl_tlp_seq_item
 

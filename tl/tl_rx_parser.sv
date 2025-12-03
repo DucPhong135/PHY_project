@@ -22,15 +22,10 @@ import tl_pkg::*;
   output logic                   cpl_valid_o,
   input  logic                   cpl_ready_i,
 
-  // -> to completion generator (for MRd/CfgRd received)
+  // -> to completion generator (for MRd received)
   output cpl_gen_cmd_t cpl_cmd_o,
   output logic                 cpl_cmd_valid_o,
-  input  logic                 cpl_cmd_ready_i,
-
-  // -> to config space block (CSR read/write side-effects)
-  output cfg_req_t             cfg_req_o,      // {is_read, addr, first_be, last_be, data, length_dw, requester_id, tag}
-  output logic                 cfg_req_valid_o,
-  input  logic                 cfg_req_ready_i
+  input  logic                 cpl_cmd_ready_i
 );
 
 typedef enum int {
@@ -429,17 +424,16 @@ end
 always_comb begin
   cpl_cmd_o = '0;
   cpl_cmd_valid_o = 1'b0;
-  if(fsm_state == ST_ROUTE_PKT && (pkt_type_reg == TL_MRD || pkt_type_reg == TL_CFGRD)) begin
+  if(fsm_state == ST_ROUTE_PKT && (pkt_type_reg == TL_MRD) begin
     cpl_cmd_o.requester_id = {hdr_reg[39:32], hdr_reg[47:40]};
     cpl_cmd_o.tag          = hdr_reg[55:48];
     cpl_cmd_o.byte_count    = length_dw_reg << 2;
-    cpl_cmd_o.lower_addr    = is_4dw_hdr_reg ? hdr_reg[126:120] : hdr_reg[94:88];
+    cpl_cmd_o.addr    = (is_4dw_hdr_reg) ? {hdr_reg[71:64], hdr_reg[79:72], hdr_reg[87:80], hdr_reg[95:88], hdr_reg[103:96], hdr_reg[111:104], hdr_reg[119:112]} : {32'b0, hdr_reg[71:64], hdr_reg[79:72], hdr_reg[87:80], hdr_reg[95:88]};
     cpl_cmd_o.first_be = first_be;
     cpl_cmd_o.last_be  = last_be;    
     if(pkt_type_reg == TL_MRD) begin
       // Memory Read: Return test pattern data (no real memory controller)
       // Option 1: Fixed pattern for testing
-      cpl_cmd_o.data = 256'hDEADBEEF_CAFEBABE_12345678_9ABCDEF0_AAAA5555_FFFF0000_A5A5A5A5_5A5A5A5A;
       cpl_cmd_o.has_data = 1'b1;
       cpl_cmd_o.cpl_status = tl_pkg::CPL_SUCCESS;
       
@@ -447,11 +441,6 @@ always_comb begin
       // logic [63:0] addr_64;
       // addr_64 = is_4dw_hdr_reg ? {hdr_reg[95:64], hdr_reg[127:96]} : {32'h0, hdr_reg[95:64]};
       // cpl_cmd_o.data = {addr_64, addr_64, addr_64, addr_64};  // Replicate address
-    end
-    else begin  // TL_CFGRD
-      cpl_cmd_o.data = '0;  // Placeholder - should come from cfg_space
-      cpl_cmd_o.has_data = 1'b1;
-      cpl_cmd_o.cpl_status = tl_pkg::CPL_SUCCESS;
     end
     
     if(cpl_cmd_ready_i) begin
@@ -463,10 +452,9 @@ always_comb begin
     cpl_cmd_o.requester_id = {hdr_reg[39:32], hdr_reg[47:40]};
     cpl_cmd_o.tag          = hdr_reg[55:48];
     cpl_cmd_o.byte_count   = 12'd0;  // No data for UR
-    cpl_cmd_o.lower_addr   = 7'd0;
+    cpl_cmd_o.addr   = 7'd0;
     cpl_cmd_o.first_be     = first_be;
     cpl_cmd_o.last_be      = last_be;
-    cpl_cmd_o.data         = '0;
     cpl_cmd_o.has_data     = 1'b0;
     cpl_cmd_o.cpl_status   = tl_pkg::CPL_UR;  // Unsupported Request
     
@@ -476,23 +464,6 @@ always_comb begin
   end
 end
 
-// ========== Config Request Output (ALREADY CORRECT) ==========
-always_comb begin
-  cfg_req_o = '0;
-  cfg_req_valid_o = 1'b0;
-  
-  if (fsm_state == ST_ROUTE_PKT && (pkt_type_reg == TL_CFGRD || pkt_type_reg == TL_CFGWR)) begin
-    cfg_req_o.is_read      = (pkt_type_reg == TL_CFGRD);
-    cfg_req_o.requester_id = {hdr_reg[39:32], hdr_reg[47:40]};
-    cfg_req_o.tag          = hdr_reg[55:48];
-    cfg_req_o.first_be     = first_be;
-    cfg_req_o.reg_num      = {hdr_reg[87:84], hdr_reg[95:90]};
-    cfg_req_o.data         = (pkt_type_reg == TL_CFGWR) ? hdr_reg[127:96] : 32'd0;
-    if(cfg_req_ready_i) begin
-      cfg_req_valid_o = 1'b1;
-    end
-  end
-end
 
 always_comb begin
   cpl_o = '0;
