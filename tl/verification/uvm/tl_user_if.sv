@@ -33,12 +33,6 @@ interface tl_user_if(
   logic        reop;
   logic        rready;
 
-  //------------------------------------------------------------------
-  // Memory write interface (for monitoring)
-  //------------------------------------------------------------------
-  tl_data_t memwr;
-  logic     memwr_valid;
-  logic     memwr_ready;
 
   //------------------------------------------------------------------
   // Driver Task: Send command (hardware types only)
@@ -76,8 +70,7 @@ interface tl_user_if(
       
       @(posedge clk);
       wdata  <= beats[i];
-      wvalid <= 1'b1;
-      
+      wvalid <= 1'b1;  
     end
     
     // Deassert valid
@@ -112,7 +105,6 @@ interface tl_user_if(
     wdata       <= '0;
     wvalid      <= 1'b0;
     rready      <= 1'b0;
-    memwr_ready <= 1'b1;
   endtask
 
   //------------------------------------------------------------------

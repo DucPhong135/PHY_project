@@ -16,7 +16,7 @@ class tl_dll_env extends uvm_env;
   // Build phase: create agent
   function void build_phase(uvm_phase phase);
     super.build_phase(phase);
-    uvm_config_db#(uvm_bitstream_t)::set(this, "dll_agent", "is_active", UVM_PASSIVE);
+    uvm_config_db#(uvm_bitstream_t)::set(this, "dll_agent", "is_active", UVM_ACTIVE);
     dll_agent = tl_dll_agent::type_id::create("dll_agent", this);
   endfunction : build_phase
 endclass : tl_dll_env

@@ -30,6 +30,7 @@ module top ();
 
   tl_user_if user_if(clk, rst_n);
   tl_dll_if  dll_if(clk, rst_n);
+  mem_if   mem_if(clk, rst_n);
 
 
   tl_top #(
@@ -70,16 +71,36 @@ module top ();
     .usr_reop_o      (user_if.reop),
     .usr_rready_i    (user_if.rready),
     
-    // Memory write interface (output - for verification)
-    .memwr_o         (user_if.memwr),
-    .memwr_valid_o   (user_if.memwr_valid),
-    .memwr_ready_i   (user_if.memwr_ready)
+    // Memory Write Request Channel
+    .memwr_req_o       (mem_if.memwr_req),
+    .memwr_req_valid_o (mem_if.memwr_req_valid),
+    .memwr_req_ready_i (mem_if.memwr_req_ready),
+    
+    // Memory Write Data Channel
+    .memwr_data_o       (mem_if.memwr_data),
+    .memwr_data_valid_o (mem_if.memwr_data_valid),
+    .memwr_data_ready_i (mem_if.memwr_data_ready),
+    
+    // Memory Read Request Channel
+    .memrd_req_o       (mem_if.memrd_req),
+    .memrd_req_valid_o (mem_if.memrd_req_valid),
+    .memrd_req_ready_i (mem_if.memrd_req_ready),
+    
+    // Memory Read Data Channel
+    .memrd_data_i       (mem_if.memrd_data),
+    .memrd_data_valid_i (mem_if.memrd_data_valid),
+    .memrd_data_ready_o (mem_if.memrd_data_ready)
   );
 
     initial begin
-        uvm_config_db#(virtual tl_user_if)::set(null, "uvm_test_top.tx_tb.user_env.user_agent.*", "user_vif", user_if);
-        uvm_config_db#(virtual tl_dll_if)::set(null, "uvm_test_top.tx_tb.dll_env.dll_agent.*", "dll_vif", dll_if);
-        run_test("tl_tx_test");
+        // uvm_config_db#(virtual tl_user_if)::set(null, "uvm_test_top.tx_tb.user_env.user_agent.*", "user_vif", user_if);
+        // uvm_config_db#(virtual tl_dll_if)::set(null, "uvm_test_top.tx_tb.dll_env.dll_agent.*", "dll_vif", dll_if);
+        // run_test("tl_tx_test");
+        uvm_config_db#(virtual tl_user_if)::set(null, "uvm_test_top.rx_tb.user_env.user_agent.*", "user_vif", user_if);
+        uvm_config_db#(virtual tl_dll_if)::set(null, "uvm_test_top.rx_tb.dll_env.dll_agent.*", "dll_vif", dll_if);
+        uvm_config_db#(virtual mem_if)::set(null, "uvm_test_top.rx_tb.memory_env.agent.*", "mem_vif", mem_if);
+        uvm_config_db#(virtual mem_if)::set(null, "uvm_test_top.rx_tb.memory_env.*", "mem_vif", mem_if);
+        run_test("tl_rx_test");
     end
 
 endmodule: top

@@ -7,7 +7,7 @@ class tl_tx_test extends uvm_test;
   `uvm_component_utils(tl_tx_test);
 
   // Testbench handle
-  tl_tx_tb tx_tb;
+  tl_tb tx_tb;
 
 
   // Constructor
@@ -18,7 +18,9 @@ class tl_tx_test extends uvm_test;
   // Build phase: create testbench
   function void build_phase(uvm_phase phase);
     super.build_phase(phase);
-    tx_tb = tl_tx_tb::type_id::create("tx_tb", this);
+    uvm_config_db#(bit)::set(this, "tx_tb", "tx_scoreboard_enabled", 1'b1);
+    uvm_config_db#(bit)::set(this, "tx_tb", "rx_scoreboard_enabled", 1'b0);
+    tx_tb = tl_tb::type_id::create("tx_tb", this);
 
     uvm_config_db#(uvm_object_wrapper)::set(this, "tx_tb.user_env.user_agent.user_sequencer.run_phase", "default_sequence", tx_seq::get_type());
   endfunction : build_phase

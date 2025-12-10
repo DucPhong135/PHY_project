@@ -92,6 +92,30 @@ endtask
     fc_valid_i    <= 1'b0;
   endtask
 
+
+  task drive_tlp_packet(tl_stream_t beats[$]);
+    foreach (beats[i]) begin
+      // Wait for ready before asserting valid
+      @(posedge clk);
+      while (!tl_rx_ready_o) begin
+        @(posedge clk);
+      end
+      
+      // Drive beat and assert valid only when ready is high
+      tl_rx_i       <= beats[i];
+      tl_rx_valid_i <= 1'b1;
+      
+      
+      // Hold for one cycle (valid & ready both high = transfer)
+      @(posedge clk);
+      tl_rx_valid_i <= 1'b0;
+    end
+    
+    // De-assert valid after last beat
+    @(posedge clk);
+    tl_rx_valid_i <= 1'b0;
+  endtask
+
 endinterface : tl_dll_if
 
 `endif

@@ -84,18 +84,7 @@ module tl_payload_mux
   assign is_last_beat = (data_dw_sent + dw_this_beat >= total_data_dw);
 
   // Byte enables for current beat
-  logic [3:0] default_be_this_beat;
-  logic [3:0] be_this_beat;
   
-  assign default_be_this_beat = (dw_this_beat == 12'd4) ? 4'b1111 :
-                                (dw_this_beat == 12'd3) ? 4'b0111 :
-                                (dw_this_beat == 12'd2) ? 4'b0011 :
-                                (dw_this_beat == 12'd1) ? 4'b0001 : 4'b0000;
-
-  // Apply FirstDWBE on first data beat, LastDWBE on last beat, default for middle beats
-  assign be_this_beat = is_first_data_beat ? first_dw_be :
-                        is_last_beat       ? last_dw_be :
-                                             4'b1111;
 
   // FSM state register
   always_ff @(posedge clk or negedge rst_n) begin
@@ -240,7 +229,6 @@ module tl_payload_mux
             tx_pkt_o.data[127:96]     = wdata_i[31:0]; // First data DW packed
             tx_pkt_o.sop        = 1'b1;
             tx_pkt_o.eop        = (total_data_dw == 12'd0 || total_data_dw == 12'd1);
-            tx_pkt_o.be         = (total_data_dw == 12'd1) ? {first_dw_be, 4'b1111} : 4'b1111;
             tx_pkt_o.is_dllp    = 1'b0;
             tx_pkt_valid_o      = tx_pkt_ready_i && wdata_valid_i;
             
@@ -252,7 +240,6 @@ module tl_payload_mux
             tx_pkt_o.data[127:96]     = 32'h0; // No data for read
             tx_pkt_o.sop        = 1'b1;
             tx_pkt_o.eop        = 1'b1;
-            tx_pkt_o.be         = 4'b1111;
             tx_pkt_o.is_dllp    = 1'b0;
             tx_pkt_valid_o      = tx_pkt_ready_i;
             wdata_consumed_dw_o   = 2'd0;  // ← No data consumed yet
@@ -264,7 +251,6 @@ module tl_payload_mux
             tx_pkt_o.data       = hdr_reg;
             tx_pkt_o.sop        = 1'b1;
             tx_pkt_o.eop        = (total_data_dw == 12'd0);
-            tx_pkt_o.be         = 4'b1111;
             tx_pkt_o.is_dllp    = 1'b0;
             tx_pkt_valid_o      = tx_pkt_ready_i;
             wdata_consumed_dw_o = 2'd0;  // ← No data consumed yet
@@ -273,7 +259,6 @@ module tl_payload_mux
             tx_pkt_o.data       = hdr_reg;
             tx_pkt_o.sop        = 1'b1;
             tx_pkt_o.eop        = 1'b1;
-            tx_pkt_o.be         = 4'b1111;
             tx_pkt_o.is_dllp    = 1'b0;
             tx_pkt_valid_o      = tx_pkt_ready_i;
             wdata_consumed_dw_o = 2'd0;  // ← No data consumed yet
@@ -305,7 +290,6 @@ module tl_payload_mux
           end
           tx_pkt_o.sop          = 1'b0;
           tx_pkt_o.eop          = is_last_beat;
-          tx_pkt_o.be           = be_this_beat;
           tx_pkt_o.is_dllp      = 1'b0;
           if(is_last_beat) begin
             tx_pkt_valid_o      = tx_pkt_ready_i;
@@ -320,7 +304,6 @@ module tl_payload_mux
           tx_pkt_o.data       = wdata_i;
           tx_pkt_o.sop        = 1'b0;
           tx_pkt_o.eop        = is_last_beat;
-          tx_pkt_o.be         = be_this_beat;
           tx_pkt_o.is_dllp    = 1'b0;
           tx_pkt_valid_o      = wdata_valid_i && tx_pkt_ready_i;
           

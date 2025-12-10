@@ -6,7 +6,6 @@ package tl_pkg;
     logic [127:0] data;   // 128-bit TLP/DLLP payload
     logic         sop;    // start-of-packet
     logic         eop;    // end-of-packet
-    logic  [3:0]  be;     // byte-enable for final DW (optional)
     logic         is_dllp;// 1 = DLLP, 0 = TLP
   } tl_stream_t;
 
@@ -51,6 +50,17 @@ typedef struct packed {
     logic         sop;       // start of packet
     logic         eop;       // end of packet
 } tl_data_t;
+
+//----------------------------------------------------------------
+// Memory Write interface (for sending MWr to external memory model)
+// All header info valid on SOP beat, data streams on all beats
+//----------------------------------------------------------------
+typedef struct packed {
+  logic [63:0]  addr;      // Address (valid on SOP)
+  logic [9:0]   length;    // Total length in DWs (valid on SOP)
+  logic [3:0]   first_be;  // Byte enables for first DW (valid on SOP)
+  logic [3:0]   last_be;   // Byte enables for last DW (valid on SOP)
+} memrq_t;
 
 
   //----------------------------------------------------------------

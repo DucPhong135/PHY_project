@@ -8,8 +8,8 @@ class tl_dll_agent extends uvm_agent;
   
   // Components
   tl_dll_monitor dll_monitor;  // Monitors tl_tx_o output
-  // tl_dll_driver  driver;   // Drives tl_dll_i input (not used)
-  // tl_dll_sequencer sequencer; // Sequencer (not used)   
+  tl_dll_driver  dll_driver;   // Drives tl_dll_i input (not used)
+  tl_dll_sequencer dll_sequencer; // Sequencer (not used)   
   
   function new(string name = "tl_dll_agent", uvm_component parent = null);
     super.new(name, parent);
@@ -17,11 +17,24 @@ class tl_dll_agent extends uvm_agent;
   
   function void build_phase(uvm_phase phase);
     super.build_phase(phase);
-    
+    if(is_active == UVM_ACTIVE) begin
+      // Create driver and sequencer for active agent
+      dll_driver = tl_dll_driver::type_id::create("dll_driver", this);
+      dll_sequencer = tl_dll_sequencer::type_id::create("dll_sequencer", this);
+    end
     // Always create monitor
     dll_monitor = tl_dll_monitor::type_id::create("dll_monitor", this);
   endfunction
-  
+
+
+  function void connect_phase(uvm_phase phase);
+    super.connect_phase(phase);
+    if(is_active == UVM_ACTIVE) begin
+      // Connect driver to sequencer
+      dll_driver.seq_item_port.connect(dll_sequencer.seq_item_export);
+    end
+  endfunction
+
 endclass : tl_dll_agent
 
 `endif // TL_DLL_AGENT_SV

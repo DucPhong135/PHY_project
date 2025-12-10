@@ -38,10 +38,25 @@ module tl_top #(
   output logic             usr_reop_o,
   input  logic             usr_rready_i,
 
-  // --- Memory Write Output (for verification)
-  output tl_data_t         memwr_o,
-  output logic             memwr_valid_o,
-  input  logic             memwr_ready_i
+  // --- Memory Write Request Channel (for incoming MWr from EP)
+  output memrq_t           memwr_req_o,       // Write request: addr, length, first_be, last_be
+  output logic             memwr_req_valid_o, // Write request valid
+  input  logic             memwr_req_ready_i, // Write request accepted
+
+  // --- Memory Write Data Channel (for incoming MWr from EP)
+  output logic [127:0]     memwr_data_o,        // Write data (128-bit per beat)
+  output logic             memwr_data_valid_o,  // Write data valid
+  input  logic             memwr_data_ready_i,  // Write data ready
+
+  // --- Memory Read Request Channel (for incoming MRd from EP)
+  output memrq_t           memrd_req_o,       // Read request: addr, length, first_be, last_be
+  output logic             memrd_req_valid_o, // Read request valid
+  input  logic             memrd_req_ready_i, // Read request accepted
+
+  // --- Memory Read Data Channel (data returned from memory for MRd)
+  input  logic [127:0]     memrd_data_i,        // Read data (128-bit per beat)
+  input  logic             memrd_data_valid_i,  // Read data valid
+  output logic             memrd_data_ready_o   // Ready to accept read data
 );
 
 
@@ -114,8 +129,10 @@ module tl_top #(
   // -----------------------------------------------------------------
   // Internal Wires - RX Parser
   // -----------------------------------------------------------------
-  tl_data_t             memwr_pkt;
-  logic                 memwr_valid, memwr_ready;
+  memrq_t               memwr_req;
+  logic                 memwr_req_valid, memwr_req_ready;
+  logic [127:0]         memwr_data;
+  logic                 memwr_data_valid, memwr_data_ready;
 
   cpl_rx_t              cpl_pkt;
   logic                 cpl_valid, cpl_ready;
@@ -125,6 +142,7 @@ module tl_top #(
 
   cpl_gen_cmd_t         cpl_gen_cmd;
   logic                 cpl_gen_cmd_valid, cpl_gen_cmd_ready;
+
 
   // -----------------------------------------------------------------
   // Internal Wires - Config Space
@@ -338,6 +356,8 @@ module tl_top #(
   ) u_cpl_gen (
     .clk              (clk),
     .rst_n            (rst_n),
+
+    .requester_id_i   (requester_id),
     
     // Completion command input (from RX parser when MRd received)
     .cpl_cmd_i        (cpl_gen_cmd),
@@ -347,6 +367,16 @@ module tl_top #(
     // Credit check
     .credit_hdr_ok_i  (cplh_credit_ok),
     .credit_data_ok_i (cpld_credit_ok),
+
+    // Memory Read Request Interface
+    .memrd_rq_o       (memrd_req_o),
+    .memrd_rq_valid_o (memrd_req_valid_o),
+    .memrd_rq_ready_i (memrd_req_ready_i),
+
+    // Memory Read Data Interface
+    .memrd_data_i     (memrd_data_i),
+    .memrd_data_valid_i(memrd_data_valid_i),
+    .memrd_data_ready_o(memrd_data_ready_o),
     
     // Completion packet output
     .cpl_pkt_o        (cpl_gen_pkt),
@@ -457,20 +487,20 @@ module tl_top #(
     .tl_rx_valid_i    (tl_rx_valid_i),
     .tl_rx_ready_o    (tl_rx_ready_o),
     
-    // Memory Write output (stubbed - RC doesn't receive MWr from downstream)
-    .memwr_o          (memwr_pkt),
-    .memwr_valid_o    (memwr_valid),
-    .memwr_ready_i    (memwr_ready),
+    // Memory Write Request Interface
+    .memwr_rq_o       (memwr_req_o),
+    .memwr_rq_valid_o (memwr_req_valid_o),
+    .memwr_rq_ready_i (memwr_req_ready_i),
+
+    // Memory Write Data Interface
+    .memwr_data_o       (memwr_data_o),
+    .memwr_data_valid_o (memwr_data_valid_o),
+    .memwr_data_ready_i (memwr_data_ready_i),
     
-    // Completion command output (stubbed - RC doesn't generate completions for incoming reads)
+    // Completion command output (for incoming MRd - triggers cpl_gen)
     .cpl_cmd_o        (cpl_gen_cmd),
     .cpl_cmd_valid_o  (cpl_gen_cmd_valid),
     .cpl_cmd_ready_i  (cpl_gen_cmd_ready),
-    
-    // Config Request output (connected to cfg_space for RC's own configuration)
-    .cfg_req_o        (cfg_req),
-    .cfg_req_valid_o  (cfg_req_valid),
-    .cfg_req_ready_i  (cfg_req_ready),
     
     // Completion output (active - RC receives completions from endpoints)
     .cpl_o            (cpl_pkt),
@@ -478,10 +508,7 @@ module tl_top #(
     .cpl_ready_i      (cpl_ready)
   );
 
-  // Connect memory write signals to top-level output (for UVM verification)
-  assign memwr_o       = memwr_pkt;
-  assign memwr_valid_o = memwr_valid;
-  assign memwr_ready   = memwr_ready_i;
+
   
   // Config request is NOT stubbed - it's processed by cfg_space through the decoder
   // (RC has its own config space that can be read/written by upstream devices)

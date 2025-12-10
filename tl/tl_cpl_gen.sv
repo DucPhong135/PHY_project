@@ -21,10 +21,9 @@ import tl_pkg::*;
   input  logic                   credit_data_ok_i,
 
     // --- Memory Read Request Interface (for incoming MRd from EP)
-  output logic [63:0]      memrd_addr_o,       // Address to read
-  output logic [9:0]       memrd_len_o,        // Length in DWs
-  output logic             memrd_valid_o,      // Request valid
-  input  logic             memrd_ready_i,      // Request accepted
+  output memrq_t           memrd_rq_o,
+  output logic             memrd_rq_valid_o,      // Request valid
+  input  logic             memrd_rq_ready_i,      // Request accepted
 
   // --- Memory Read Data Interface (data returned from memory)
   input  logic [127:0]     memrd_data_i,       // Read data (128-bit per beat)
@@ -52,9 +51,17 @@ fsm_state_t fsm_state, fsm_next;
 tl_pkg::cpl_gen_cmd_t cpl_cmd_reg;
 
 // Beat counter for multi-beat data transfers
+logic [9:0] dw_count;
+logic [9:0]  dw_sent;            // DWs already sent
+logic [9:0]  dw_remaining;       // DWs remaining to send
 logic [7:0] beat_count;  // Extended to 8 bits to support up to 255 beats
 logic [7:0] total_beats; // Extended to 8 bits for max payload support
 logic [7:0] data_beat_count;
+
+// DWs in current beat (1-4)
+logic [2:0]  dw_this_beat;
+logic        is_last_beat;
+logic        is_first_data_beat;
 
 // Internal header register
 logic [127:0] cpl_hdr_reg;
@@ -96,7 +103,7 @@ logic [95:0] mem_data_buf;
           end
       end
       FSM_MEM_REQ: begin
-        if (memrd_valid_o && memrd_ready_i) begin
+        if (memrd_rq_valid_o && memrd_rq_ready_i) begin
           fsm_next = FSM_SEND_HDR;
         end
       end
@@ -115,14 +122,17 @@ logic [95:0] mem_data_buf;
 
       FSM_SEND_HDR: begin
         if (cpl_pkt_valid_o && cpl_pkt_ready_i) begin
-          if (cpl_cmd_reg.has_data && total_beats > 0) begin
+          if (cpl_cmd_reg.has_data && dw_count > 10'd1) begin
             fsm_next = FSM_SEND_DATA;
+          end
+          else if(!cpl_cmd_reg.has_data || dw_count == 10'd1) begin
+            fsm_next = FSM_IDLE;  // No data or only header + 1 DW
           end
         end
       end
       FSM_SEND_DATA: begin
         if (cpl_pkt_valid_o && cpl_pkt_ready_i) begin
-          if (beat_count >= total_beats - 1) begin
+          if (is_last_beat) begin
             fsm_next = FSM_IDLE;  // All data sent, go back to IDLE
           end
         end
@@ -136,6 +146,7 @@ always_comb begin
 end
 
 
+
 always_ff @(posedge clk or negedge rst_n) begin
   if (!rst_n) begin
     cpl_cmd_reg <= '0;
@@ -145,14 +156,46 @@ always_ff @(posedge clk or negedge rst_n) begin
       cpl_cmd_reg <= cpl_cmd_i;  // Latch command on IDLE state
     end
     else if(fsm_state == FSM_GEN_HDR) begin
-      total_beats <= ((current_cpl_bytes - 12'd4 + 12'd15) >> 4); 
+      if (cpl_cmd_reg.byte_count > 12'd4) begin
+        total_beats <= ((dw_count - 10'd1 + 10'd3) >> 2);  // ceil((dw_count-1)/4)
+      end else begin
+        total_beats <= 8'd0;
+      end
     end
   end
 end
 
-assign memrd_addr_o  = cpl_cmd_reg.addr;
-assign memrd_len_o   = total_beats; // Length in DWs
-assign memrd_valid_o = (fsm_state == FSM_MEM_REQ) && memrd_ready_i;
+assign memrd_rq_o.addr  = cpl_cmd_reg.addr;
+assign memrd_rq_o.length   = dw_count; // Length in DWs
+assign memrd_rq_o.first_be = cpl_cmd_reg.first_be;
+assign memrd_rq_o.last_be  = cpl_cmd_reg.last_be;
+
+assign memrd_rq_valid_o = (fsm_state == FSM_MEM_REQ) && memrd_rq_ready_i;
+
+
+assign dw_count = (cpl_cmd_reg.byte_count + 12'd3) >> 2; // Convert byte count to DW count with ceiling
+
+assign dw_remaining = dw_count - dw_sent;
+assign is_last_beat = (dw_sent + {7'd0, dw_this_beat} >= dw_count);
+
+always_comb begin
+  if (fsm_state == FSM_SEND_DATA) begin
+    if (dw_remaining >= 10'd4)
+      dw_this_beat = 3'd4;
+    else if (dw_remaining == 10'd3)
+      dw_this_beat = 3'd3;
+    else if (dw_remaining == 10'd2)
+      dw_this_beat = 3'd2;
+    else if (dw_remaining == 10'd1)
+      dw_this_beat = 3'd1;
+    else
+      dw_this_beat = 3'd0;
+  end else begin
+    dw_this_beat = 3'd0;
+  end
+end
+
+
 
 
 always_comb begin
@@ -160,8 +203,15 @@ always_comb begin
   
   case (fsm_state)
     FSM_SEND_HDR:  memrd_data_ready_o = cpl_pkt_ready_i;
-    FSM_SEND_DATA: memrd_data_ready_o = cpl_pkt_ready_i;
-    default:       memrd_data_ready_o = 1'b0;
+    FSM_SEND_DATA: begin
+      // Don't request memory data if last beat only needs buffered data
+      if (is_last_beat && dw_this_beat <= 3'd3) begin
+        memrd_data_ready_o = 1'b0;  // No new data needed
+      end else begin
+        memrd_data_ready_o = cpl_pkt_ready_i;
+      end
+    end
+    default: memrd_data_ready_o = 1'b0;
   endcase
 end
 
@@ -193,8 +243,24 @@ always_ff @(posedge clk or negedge rst_n) begin
   end
 end
 
+always_ff @(posedge clk or negedge rst_n) begin
+  if (!rst_n) begin
+    dw_sent <= 10'd0;
+  end else begin
+    if (fsm_state == FSM_IDLE) begin
+      dw_sent <= 10'd0;
+    end else if (fsm_state == FSM_SEND_HDR && cpl_pkt_valid_o && cpl_pkt_ready_i) begin
+      if (cpl_cmd_reg.has_data) begin
+        dw_sent <= 10'd1;  // Header beat sends 1 DW
+      end
+    end else if (fsm_state == FSM_SEND_DATA && cpl_pkt_valid_o && cpl_pkt_ready_i) begin
+      dw_sent <= dw_sent + {7'd0, dw_this_beat};
+    end
+  end
+end
+
 // Calculate DW count with ceiling (round up)
-logic [9:0] DW_count = (cpl_cmd_reg.byte_count + 12'd3) >> 2;
+logic [9:0] dw_count = (cpl_cmd_reg.byte_count + 12'd3) >> 2;
 
 // Header Generation Logic
 always_ff @(posedge clk or negedge rst_n) begin
@@ -211,8 +277,8 @@ always_ff @(posedge clk or negedge rst_n) begin
         
         // Common header fields
         cpl_hdr_reg[15:8] <= 8'h00; // Traffic Class 0, No Attributes
-        cpl_hdr_reg[23:16] <= {6'b0, total_beats[9:8]}; // Length MSBs
-        cpl_hdr_reg[31:24] <= total_beats[7:0]; // Length LSBs
+        cpl_hdr_reg[23:16] <= {6'b0, dw_count[9:8]}; // Length MSBs
+        cpl_hdr_reg[31:24] <= dw_count[7:0]; // Length LSBs
         cpl_hdr_reg[39:32] <= requester_id_i[15:8]; // Completer ID from command
         cpl_hdr_reg[47:40] <= requester_id_i[7:0]; // Completer ID from command
         cpl_hdr_reg[55:53] <= cpl_cmd_reg.cpl_status; // Completion Status
@@ -230,8 +296,8 @@ always_ff @(posedge clk or negedge rst_n) begin
       // Unsupported Completion Status - UR (always without data)
       cpl_hdr_reg[7:0] <= 8'h0A; // CPL
       cpl_hdr_reg[15:8] <= 8'h00; // Traffic Class 0, No Attributes
-      cpl_hdr_reg[23:16] <= {6'b0, DW_count[9:8]}; // Length MSBs
-      cpl_hdr_reg[31:24] <= DW_count[7:0]; // Length LSBs
+      cpl_hdr_reg[23:16] <= {6'b0, dw_count[9:8]}; // Length MSBs
+      cpl_hdr_reg[31:24] <= dw_count[7:0]; // Length LSBs
       cpl_hdr_reg[39:32] <= requester_id_i[15:8]; // Completer ID from command
       cpl_hdr_reg[47:40] <= requester_id_i[7:0]; // Completer ID from command
       cpl_hdr_reg[55:53] <= cpl_cmd_reg.cpl_status; // Completion Status
@@ -241,7 +307,7 @@ always_ff @(posedge clk or negedge rst_n) begin
       cpl_hdr_reg[71:64] <= cpl_cmd_reg.requester_id[15:8]; // Requester ID from command
       cpl_hdr_reg[79:72] <= cpl_cmd_reg.requester_id[7:0]; // Requester ID from command
       cpl_hdr_reg[87:80] <= cpl_cmd_reg.tag; // Tag from command
-      cpl_hdr_reg[94:88] <= cpl_cmd_reg.lower_addr; // Lower Address from command
+      cpl_hdr_reg[94:88] <= cpl_cmd_reg.addr[6:0]; // Lower Address from command
       cpl_hdr_reg[95] <= 1'b0; // Reserved
       cpl_hdr_reg[127:96] <= 32'h0000_0000; // Reserved
     end
@@ -263,8 +329,7 @@ always_comb begin
       if(cpl_cmd_reg.has_data) begin
         // Pack first data DW at bits [127:96]
         cpl_pkt_o.data[127:96] = memrd_data_i[31:0];
-        cpl_pkt_o.eop = (total_beats == 0);  // EOP if only header + 1 DW
-        cpl_pkt_o.be = (total_beats == 0) ? cpl_cmd_reg.first_be : 4'hF;
+        cpl_pkt_o.eop = (dw_count == 1);  // EOP if only header + 1 DW
         cpl_pkt_o.is_dllp = 1'b0;
       end
       else begin
@@ -272,17 +337,27 @@ always_comb begin
         cpl_pkt_o.data[127:96] = 32'h0;
         cpl_pkt_o.sop = 1'b1;
         cpl_pkt_o.eop = 1'b1;  // Header-only completion
-        cpl_pkt_o.be = 4'hF;  // All 4 DWs valid (header is 3DW, but aligned in 4DW beat)
         cpl_pkt_o.is_dllp = 1'b0;
       end
     end
     
     FSM_SEND_DATA: begin
-      cpl_pkt_o.data = {memrd_data_i[31:0],mem_data_buf[95:0]}; // Pack data DWs, pad LSBs
       cpl_pkt_o.sop = 1'b0;
       cpl_pkt_o.eop = (beat_count >= total_beats - 1);
-      cpl_pkt_o.be = (beat_count >= total_beats - 1) ? cpl_cmd_reg.last_be : 4'hF;
       cpl_pkt_o.is_dllp = 1'b0;
+      if (is_last_beat) begin
+        // Partial last beat - pad with zeros
+        case (dw_this_beat)
+          3'd1: cpl_pkt_o.data = {96'b0, mem_data_buf[31:0]};
+          3'd2: cpl_pkt_o.data = {64'b0, mem_data_buf[63:0]};
+          3'd3: cpl_pkt_o.data = {32'b0, mem_data_buf[95:0]};
+          3'd4: cpl_pkt_o.data = {memrd_data_i[31:0], mem_data_buf[95:0]};
+          default: cpl_pkt_o.data = '0;
+        endcase
+      end else begin
+        // Full beat: 3 buffered DWs + 1 new DW
+        cpl_pkt_o.data = {memrd_data_i[31:0], mem_data_buf[95:0]};
+      end
     end
     
     default: begin
@@ -298,13 +373,18 @@ always_comb begin
   case (fsm_state)
     FSM_SEND_HDR: begin
       if (cpl_cmd_reg.has_data) begin
-        cpl_pkt_valid_o = memrd_data_valid_i && credit_hdr_ok_i && credit_data_ok_i;
+        cpl_pkt_valid_o = memrd_data_valid_i && credit_hdr_ok_i && credit_data_ok_i && cpl_pkt_ready_i;
       end else begin
-        cpl_pkt_valid_o = credit_hdr_ok_i;
+        cpl_pkt_valid_o = credit_hdr_ok_i && cpl_pkt_ready_i;
       end
     end
     FSM_SEND_DATA: begin
-      cpl_pkt_valid_o = memrd_data_valid_i && credit_data_ok_i;
+      // For last beat with ≤3 DWs, we only need buffered data (no new memory data)
+      if (is_last_beat && dw_this_beat <= 3'd3) begin
+        cpl_pkt_valid_o = credit_data_ok_i && cpl_pkt_ready_i;  // No memrd_data_valid_i needed
+      end else begin
+        cpl_pkt_valid_o = memrd_data_valid_i && credit_data_ok_i && cpl_pkt_ready_i;
+      end
     end
     default: cpl_pkt_valid_o = 1'b0;
   endcase

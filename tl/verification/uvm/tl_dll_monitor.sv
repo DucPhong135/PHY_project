@@ -7,13 +7,16 @@ class tl_dll_monitor extends uvm_monitor;
   `uvm_component_utils(tl_dll_monitor)
 
   int pkt_received_count = 0;
+  int pkt_sent_count = 0;
   
   virtual tl_dll_if vif;
-  uvm_analysis_port #(tl_tlp_seq_item) monitor_ap;
+  uvm_analysis_port #(tl_tlp_seq_item) tx_monitor_ap;
+  uvm_analysis_port #(tl_tlp_seq_item) rx_monitor_ap;
 
   function new(string name = "tl_dll_monitor", uvm_component parent = null);
     super.new(name, parent);
-    monitor_ap = new("monitor_ap", this);
+    tx_monitor_ap = new("tx_monitor_ap", this);
+    rx_monitor_ap = new("rx_monitor_ap", this);
   endfunction
   
   function void build_phase(uvm_phase phase);
@@ -24,6 +27,14 @@ class tl_dll_monitor extends uvm_monitor;
   endfunction
   
   task run_phase(uvm_phase phase);
+    fork
+      monitor_tx();
+      monitor_rx();
+    join_none
+  endtask
+  
+  // Monitor TX path (DUT -> Monitor)
+  task monitor_tx();
     tl_tlp_seq_item tlp;
     
     forever begin
@@ -33,8 +44,7 @@ class tl_dll_monitor extends uvm_monitor;
         
         // Start new packet
         if (vif.tl_tx_o.sop) begin
-          tlp = tl_tlp_seq_item::type_id::create("tlp");
-          tlp.sop = 1'b1;
+          tlp = tl_tlp_seq_item::type_id::create("tlp_tx");
         end
         
         // Capture beat
@@ -44,13 +54,45 @@ class tl_dll_monitor extends uvm_monitor;
         
         // End of packet
         if (vif.tl_tx_o.eop && tlp != null) begin
-          tlp.eop = 1'b1;
+
           pkt_received_count++;
-          `uvm_info("TX_MON", $sformatf("Pkt#: %0d", pkt_received_count), UVM_LOW);
+          `uvm_info("TX_MON", $sformatf("TX Pkt#: %0d", pkt_received_count), UVM_LOW);
           tlp.print();
 
           // Send to scoreboard
-          monitor_ap.write(tlp);
+          tx_monitor_ap.write(tlp);
+          tlp = null;
+        end
+      end
+    end
+  endtask
+  
+  // Monitor RX path (Driver -> DUT)
+  task monitor_rx();
+    tl_tlp_seq_item tlp;
+    
+    forever begin
+      @(posedge vif.clk);
+      if (vif.tl_rx_valid_i && vif.tl_rx_ready_o) begin
+        
+        // Start new packet
+        if (vif.tl_rx_i.sop) begin
+          tlp = tl_tlp_seq_item::type_id::create("tlp_rx");
+        end
+        
+        // Capture beat
+        if (tlp != null) begin
+          tlp.parse_from_stream(vif.tl_rx_i);
+        end
+        
+        // End of packet
+        if (vif.tl_rx_i.eop && tlp != null) begin
+          pkt_sent_count++;
+          `uvm_info("RX_MON", $sformatf("RX Pkt#: %0d", pkt_sent_count), UVM_LOW);
+          tlp.print();
+
+          // Send to scoreboard
+          rx_monitor_ap.write(tlp);
           tlp = null;
         end
       end
