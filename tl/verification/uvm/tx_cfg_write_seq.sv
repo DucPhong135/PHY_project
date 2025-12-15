@@ -6,7 +6,7 @@ class tx_cfg_write_seq extends uvm_sequence #(tl_user_seq_item);
 
   `uvm_object_utils(tx_cfg_write_seq)
 
-  int num_transactions = 10;
+  int num_transactions = 30;
 
   function new(string name = "tx_cfg_write_seq");
     super.new(name);
@@ -16,7 +16,7 @@ class tx_cfg_write_seq extends uvm_sequence #(tl_user_seq_item);
   virtual task body();
     repeat (num_transactions) begin
         `uvm_do_with(req, {
-            trans_type == tl_pkg::CMD_CFG;
+            trans_type == CMD_CFG;
             is_write == 1'b1;
             bus == 8'b0;
             length_dw == 1;

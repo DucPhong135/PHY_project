@@ -32,6 +32,8 @@ package tl_uvm_pkg;
 
   `include "rx_memory_seq.sv"
   `include "rx_seq.sv"
+
+  `include "cpl_sequence.sv"
   
   // 3. Driver
   `include "tl_user_driver.sv"
@@ -59,6 +61,7 @@ package tl_uvm_pkg;
 //  // 7. Scoreboard
   `include "tx_scoreboard.sv"
   `include "rx_scoreboard.sv"
+  `include "cpl_scoreboard.sv"
 
   // 8. Environment
   `include "tl_user_env.sv"
@@ -70,6 +73,7 @@ package tl_uvm_pkg;
   // 9. Tests
   `include "tl_tx_test.sv"
   `include "tl_rx_test.sv"
+  `include "tl_cpl_test.sv"
 
 endpackage : tl_uvm_pkg
 

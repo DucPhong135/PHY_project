@@ -201,7 +201,6 @@ class tl_memory_model extends uvm_component;
     bit[9:0]  rd_length;
     bit[3:0]  rd_first_be, rd_last_be;
     int       rd_beat_count;
-    int       total_beats;
     bit[127:0] rd_data;
 
     mem_sequence_item txn;

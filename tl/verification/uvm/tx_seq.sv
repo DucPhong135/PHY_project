@@ -31,9 +31,9 @@ class tx_seq extends uvm_sequence #(tl_user_seq_item);
               num_transactions),
               UVM_LOW)
     
-    `uvm_do(mem_write_seq);
-    `uvm_do(cfg_read_seq);
+    // `uvm_do(mem_write_seq);
     `uvm_do(mem_read_seq);
+    `uvm_do(cfg_read_seq);
     `uvm_do(cfg_write_seq);
   endtask
 

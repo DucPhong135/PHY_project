@@ -125,45 +125,6 @@ class tl_dll_driver extends uvm_driver #(tl_tlp_seq_item);
     
   // endtask
   
-  //================================================================
-  // Build TLP Header (128 bits)
-  //================================================================
-  function bit [127:0] build_tlp_header(tl_tlp_seq_item txn, bit is_4dw_hdr);
-    bit [31:0] dw0, dw1, dw2, dw3;
-    
-    
-    // DW0: [7:5]=fmt, [4:0]=type, [14:12]=TC, [31:24,17:16]=length
-    dw0[4:0]   = txn.pkt_type;
-    dw0[7:5]   = txn.fmt;
-    dw0[11:8] = 4'b0000;
-    dw0[14:12] = txn.tc;
-    dw0[15]    = 1'b0; // T9
-    dw0[17:16] = txn.length[9:8];
-    dw0[23:18] = 6'b000000;
-    dw0[31:24] = txn.length[7:0];
-    
-    // DW1: Requester ID, Tag, Last BE, First BE
-    dw1 = {txn.last_be, txn.first_be, 
-           txn.tag, 
-           txn.requester_id[7:0], txn.requester_id[15:8]};
-    
-    // DW2 & DW3: Address (format depends on 3DW vs 4DW)
-    if (is_4dw_hdr) begin
-      // 4DW header: DW2=upper 32 bits, DW3=lower 32 bits
-      dw2 = {txn.address[39:32], txn.address[47:40], 
-             txn.address[55:48], txn.address[63:56]};
-      dw3 = {txn.address[7:2], 2'b00, 
-             txn.address[15:8], txn.address[23:16], txn.address[31:24]};
-    end
-    else begin
-      // 3DW header: DW2=address, DW3=reserved/first data DW
-      dw2 = {txn.address[7:2], 2'b00,
-             txn.address[15:8], txn.address[23:16], txn.address[31:24]};
-      dw3 = 32'h0;  // Will be filled with first data DW if applicable
-    end
-    
-    return {dw3, dw2, dw1, dw0};
-  endfunction
   
 
 endclass : tl_dll_driver

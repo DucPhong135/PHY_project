@@ -193,14 +193,14 @@ class rx_memory_seq extends uvm_sequence #(tl_tlp_seq_item);
 
         repeat (num_transactions) begin
             `uvm_do_with(req, {
-                fmt == 3'b010; // 4DW Header with data
+                fmt == 3'b010; // 3DW Header with data
                 pkt_type == 5'b00000; // Memory Request Type
                 address == (default_addr + offset);
                 length == 8;
             })
 
             `uvm_do_with(req, {
-                fmt == 3'b000; // 4DW Header without data
+                fmt == 3'b000; // 3DW Header without data
                 pkt_type == 5'b00000; // Memory Request Type
                 address == (default_addr + offset);
                 length inside {4, 8};
@@ -210,14 +210,14 @@ class rx_memory_seq extends uvm_sequence #(tl_tlp_seq_item);
 
         repeat (num_transactions) begin
             `uvm_do_with(req, {
-                fmt == 3'b010; // 4DW Header with data
+                fmt == 3'b010; // 3DW Header with data
                 pkt_type == 5'b00000;
                 address == (default_addr + offset);
                 length == 5;
             })
 
             `uvm_do_with(req, {
-                fmt == 3'b000; // 4DW Header without data
+                fmt == 3'b000; // 3DW Header without data
                 pkt_type == 5'b00000;
                 address == (default_addr + offset);
                 length == 5;
@@ -225,14 +225,14 @@ class rx_memory_seq extends uvm_sequence #(tl_tlp_seq_item);
             
             offset += 32;
             `uvm_do_with(req, {
-                fmt == 3'b010; // 4DW Header with data
+                fmt == 3'b010; // 3DW Header with data
                 pkt_type == 5'b00000;
                 address == (default_addr + offset);
                 length == 6;
             })
 
             `uvm_do_with(req, {
-                fmt == 3'b000; // 4DW Header without data
+                fmt == 3'b000; // 3DW Header without data
                 pkt_type == 5'b00000;
                 address == (default_addr + offset);
                 length == 6;
@@ -240,14 +240,14 @@ class rx_memory_seq extends uvm_sequence #(tl_tlp_seq_item);
 
             offset += 32;
             `uvm_do_with(req, {
-                fmt == 3'b010; // 4DW Header with data
+                fmt == 3'b010; // 3DW Header with data
                 pkt_type == 5'b00000;
                 address == (default_addr + offset);
                 length == 7;
             })
 
             `uvm_do_with(req, {
-                fmt == 3'b000; // 4DW Header without data
+                fmt == 3'b000; // 3DW Header without data
                 pkt_type == 5'b00000;
                 address == (default_addr + offset);
                 length == 7;
@@ -258,14 +258,14 @@ class rx_memory_seq extends uvm_sequence #(tl_tlp_seq_item);
 
         repeat (num_transactions) begin
             `uvm_do_with(req, {
-                fmt == 3'b010; // 4DW Header with data
+                fmt == 3'b010; // 3DW Header with data
                 pkt_type == 5'b00000; // Memory Request Type
                 address == (default_addr + offset + 1);
                 length == 8;
             })
 
             `uvm_do_with(req, {
-                fmt == 3'b000; // 4DW Header without data
+                fmt == 3'b000; // 3DW Header without data
                 pkt_type == 5'b00000; // Memory Request Type
                 address == (default_addr + offset + 1);
                 length inside {4, 8};
@@ -273,14 +273,14 @@ class rx_memory_seq extends uvm_sequence #(tl_tlp_seq_item);
             offset += 64; // Increment address for next transaction
 
             `uvm_do_with(req, {
-                fmt == 3'b010; // 4DW Header with data
+                fmt == 3'b010; // 3DW Header with data
                 pkt_type == 5'b00000; // Memory Request Type
                 address == (default_addr + offset + 2);
                 length == 8;
             })
 
             `uvm_do_with(req, {
-                fmt == 3'b000; // 4DW Header without data
+                fmt == 3'b000; // 3DW Header without data
                 pkt_type == 5'b00000; // Memory Request Type
                 address == (default_addr + offset + 2);
                 length inside {4, 8};
@@ -289,14 +289,14 @@ class rx_memory_seq extends uvm_sequence #(tl_tlp_seq_item);
             offset += 64; // Increment address for next transaction
 
             `uvm_do_with(req, {
-                fmt == 3'b010; // 4DW Header with data
+                fmt == 3'b010; // 3DW Header with data
                 pkt_type == 5'b00000; // Memory Request Type
                 address == (default_addr + offset + 3);
                 length == 8;
             })
 
             `uvm_do_with(req, {
-                fmt == 3'b000; // 4DW Header without data
+                fmt == 3'b000; // 3DW Header without data
                 pkt_type == 5'b00000; // Memory Request Type
                 address == (default_addr + offset + 3);
                 length inside {4, 8};

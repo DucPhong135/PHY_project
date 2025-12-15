@@ -4,7 +4,7 @@
 
 class tx_cfg_read_seq extends uvm_sequence #(tl_user_seq_item);
 
-  int num_transactions = 10;
+  int num_transactions = 30;
 
 
   `uvm_object_utils(tx_cfg_read_seq)
@@ -18,7 +18,7 @@ class tx_cfg_read_seq extends uvm_sequence #(tl_user_seq_item);
   virtual task body();
     repeat (num_transactions) begin
         `uvm_do_with(req, {
-            trans_type == tl_pkg::CMD_CFG;
+            trans_type == CMD_CFG;
             is_write == 1'b0;
             bus == 8'b0;
             length_dw == 1;

@@ -37,6 +37,8 @@ typedef struct packed {
   logic [4:0]  device;    // Device Number
   logic [2:0]  function_num;  // Function Number
   logic [9:0]  reg_num;   // Config register number (DWORD aligned)
+  logic [31:0] config_data;      // Write data (for config writes)
+
 } tl_cmd_t;
 
 

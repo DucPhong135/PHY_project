@@ -2,11 +2,11 @@
 `define TL_DLL_AGENT_SV
 
 
-class tl_dll_agent extends uvm_agent;
+class tl_cpl_agent extends uvm_agent;
   
   `uvm_component_utils(tl_dll_agent)
 
-  bit monitor_cpl = 1'b1;
+  bit monitor_cpl = 1'b0;
   
   // Components
   tl_dll_monitor dll_monitor;  // Monitors tl_tx_o output
@@ -26,9 +26,6 @@ class tl_dll_agent extends uvm_agent;
     end
     // Always create monitor
     dll_monitor = tl_dll_monitor::type_id::create("dll_monitor", this);
-    if(monitor_cpl) begin
-        dll_monitor.reactive_sqr = dll_sequencer;
-    end
   endfunction
 
 
@@ -37,6 +34,9 @@ class tl_dll_agent extends uvm_agent;
     if(is_active == UVM_ACTIVE) begin
       // Connect driver to sequencer
       dll_driver.seq_item_port.connect(dll_sequencer.seq_item_export);
+    end
+      if(monitor_cpl) begin
+        dll_monitor.reactive_sqr = dll_sequencer;
     end
   endfunction
 

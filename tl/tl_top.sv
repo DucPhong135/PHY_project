@@ -30,13 +30,38 @@ module tl_top #(
   input  logic       usr_wvalid_i,
   output logic       usr_wready_o,
 
-  output logic [TAG_W-1:0] usr_rtag_o,
-  output logic [31:0]      usr_raddr_o,
-  output logic [127:0]     usr_rdata_o,
-  output logic             usr_rvalid_o,
-  output logic             usr_rsop_o,
-  output logic             usr_reop_o,
-  input  logic             usr_rready_i,
+  // Read response interface
+  output logic [63:0]            usr_read_rp_addr_o,
+  output logic [9:0]             usr_read_rp_length_o,
+  output logic [3:0]             usr_first_be_o,
+  output logic [3:0]             usr_last_be_o,
+  output logic                   usr_read_rp_valid_o,
+  input  logic                   usr_read_rp_ready_i,
+
+  output logic [31:0]         usr_rdata_o,
+  output logic                usr_reop_o,
+  output logic                usr_rvalid_o,
+  input  logic                usr_rready_i,
+
+
+  // Config Read Completion (For verification purposes)
+  output logic [TAG_W-1:0]       cfg_rd_tag_o,     // Tag of config read request
+  output logic [31:0]            cfg_rd_data_o,    // Config read data (1 DW)
+  output logic [2:0]             cfg_rd_status_o,  // Completion status
+  output logic [7:0]             cfg_rd_bus_number_o,
+  output logic [4:0]             cfg_rd_device_number_o,
+  output logic [2:0]             cfg_rd_function_number_o,
+  output logic                   cfg_rd_valid_o,   // Config read completion valid
+  input  logic                   cfg_rd_ready_i,   // Config read completion ready
+  
+  // Config Write  (For verification purposes)
+  output logic [TAG_W-1:0]       cfg_wr_tag_o,     // Tag of config write request
+  output logic [2:0]             cfg_wr_status_o,  // Completion status
+  output logic [7:0]             cfg_wr_bus_number_o,
+  output logic [4:0]             cfg_wr_device_number_o,
+  output logic [2:0]             cfg_wr_function_number_o,
+  output logic                   cfg_wr_valid_o,   // Config write completion valid
+  input  logic                   cfg_wr_ready_i,    // Config write completion ready
 
   // --- Memory Write Request Channel (for incoming MWr from EP)
   output memrq_t           memwr_req_o,       // Write request: addr, length, first_be, last_be
@@ -73,17 +98,31 @@ module tl_top #(
   logic [TAG_W-1:0]     alloc_tag;
   logic                 alloc_gnt;
   logic                 alloc_req;
-  logic [31:0]          alloc_addr;
+  logic [63:0]          alloc_addr;
   logic [9:0]           alloc_len;
   logic [2:0]           alloc_attr;
+  logic [4:0]           alloc_pkt_type;
+  logic [2:0]           alloc_fmt;
+  logic [3:0]           alloc_first_be;
+  logic [3:0]           alloc_last_be;
+  logic [7:0]           alloc_bus_number;
+  logic [4:0]           alloc_device_number;
+  logic [2:0]           alloc_function_number;
 
   logic [TAG_W-1:0]     lookup_tag;
   logic                 lookup_valid;
   logic                 lookup_ready;
   logic [15:0]          lookup_req_id;
-  logic [31:0]          lookup_addr;
+  logic [63:0]          lookup_addr;
   logic [9:0]           lookup_len;
   logic [2:0]           lookup_attr;
+  logic [2:0]           lookup_fmt;
+  logic [4:0]           lookup_pkt_type;
+  logic [3:0]           lookup_first_be;
+  logic [3:0]           lookup_last_be;
+  logic [7:0]           lookup_bus_number;
+  logic [4:0]           lookup_device_number;
+  logic [2:0]           lookup_function_number;
 
   logic [TAG_W-1:0]     free_tag;
   logic                 free_valid;
@@ -171,6 +210,15 @@ module tl_top #(
     .alloc_addr_i     (alloc_addr),
     .alloc_len_i      (alloc_len),
     .alloc_attr_i     (alloc_attr),
+    .alloc_fmt_i      (alloc_fmt),
+    .alloc_pkt_type_i (alloc_pkt_type),
+    .alloc_first_be_i(alloc_first_be),
+    .alloc_last_be_i (alloc_last_be),
+
+    .alloc_bus_number_i     (alloc_bus_number),
+    .alloc_device_number_i  (alloc_device_number),
+    .alloc_function_number_i(alloc_function_number),
+
     .alloc_tag_o      (alloc_tag),
     .alloc_gnt_o      (alloc_gnt),
     
@@ -182,7 +230,14 @@ module tl_top #(
     .cpl_addr_o       (lookup_addr),
     .cpl_len_o        (lookup_len),
     .cpl_attr_o       (lookup_attr),
-    
+    .cpl_fmt_o        (lookup_fmt),
+    .cpl_pkt_type_o   (lookup_pkt_type),
+    .cpl_first_be_o   (lookup_first_be),
+    .cpl_last_be_o    (lookup_last_be),
+
+    .cpl_bus_number_o     (lookup_bus_number),
+    .cpl_device_number_o  (lookup_device_number),
+    .cpl_function_number_o(lookup_function_number),
     // Free interface (from completion engine)
     .free_tag_i       (free_tag),
     .free_valid_i     (free_valid)
@@ -208,6 +263,14 @@ module tl_top #(
     .tag_addr_o       (alloc_addr),
     .tag_len_o        (alloc_len),
     .tag_attr_o       (alloc_attr),
+    .tag_pkt_type_o   (alloc_pkt_type),
+    .tag_fmt_o        (alloc_fmt),
+    .tag_first_be_o   (alloc_first_be),
+    .tag_last_be_o    (alloc_last_be),
+
+    .tag_bus_number_o     (alloc_bus_number),
+    .tag_device_number_o  (alloc_device_number),
+    .tag_function_number_o(alloc_function_number),
     
     // Header output
     .hdr_o            (hdr),
@@ -533,19 +596,49 @@ module tl_top #(
     .lookup_addr_i    (lookup_addr),
     .lookup_len_i     (lookup_len),
     .lookup_attr_i    (lookup_attr),
-    
+    .lookup_fmt_i     (lookup_fmt),
+    .lookup_pkt_type_i(lookup_pkt_type),
+    .lookup_first_be_i(lookup_first_be),
+    .lookup_last_be_i (lookup_last_be),
+
+    .lookup_bus_number_i     (lookup_bus_number),
+    .lookup_device_number_i  (lookup_device_number),
+    .lookup_function_number_i (lookup_function_number),
+
     // Tag table free
     .free_tag_o       (free_tag),
     .free_valid_o     (free_valid),
     
     // User read data output
-    .usr_rtag_o       (usr_rtag_o),
-    .usr_raddr_o      (usr_raddr_o),
-    .usr_rdata_o      (usr_rdata_o),
-    .usr_rvalid_o     (usr_rvalid_o),
-    .usr_rsop_o       (usr_rsop_o),
-    .usr_reop_o       (usr_reop_o),
-    .usr_rready_i     (usr_rready_i)
+    .usr_read_rp_addr_o (usr_read_rp_addr_o),
+    .usr_read_rp_length_o (usr_read_rp_length_o),
+    .usr_first_be_o    (usr_first_be_o),
+    .usr_last_be_o     (usr_last_be_o),
+    .usr_read_rp_valid_o (usr_read_rp_valid_o),
+    .usr_read_rp_ready_i  (usr_read_rp_ready_i),
+
+
+    .usr_rdata_o   (usr_rdata_o),
+    .usr_reop_o    (usr_reop_o),
+    .usr_rvalid_o  (usr_rvalid_o),
+    .usr_rready_i  (usr_rready_i),
+
+    .cfg_rd_tag_o     (cfg_rd_tag_o),
+    .cfg_rd_data_o    (cfg_rd_data_o),
+    .cfg_rd_status_o  (cfg_rd_status_o),
+    .cfg_rd_bus_number_o     (cfg_rd_bus_number_o),
+    .cfg_rd_device_number_o  (cfg_rd_device_number_o),
+    .cfg_rd_function_number_o (cfg_rd_function_number_o),
+    .cfg_rd_valid_o   (cfg_rd_valid_o),
+    .cfg_rd_ready_i   (cfg_rd_ready_i),
+
+    .cfg_wr_tag_o     (cfg_wr_tag_o),
+    .cfg_wr_status_o  (cfg_wr_status_o),
+    .cfg_wr_bus_number_o     (cfg_wr_bus_number_o),
+    .cfg_wr_device_number_o  (cfg_wr_device_number_o),
+    .cfg_wr_function_number_o (cfg_wr_function_number_o),
+    .cfg_wr_valid_o   (cfg_wr_valid_o),
+    .cfg_wr_ready_i   (cfg_wr_ready_i) 
   );
 
 endmodule : tl_top

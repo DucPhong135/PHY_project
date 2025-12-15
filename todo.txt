@@ -1,3 +1,2 @@
-complete cpl_gen, handle unaligned memory request
-start creating sequence for rx_path, only need to check for memory write and memory read request, and Completion, need to have memory array in testbench
+need to creating uvc to test for receiving cpl from downstream
 Create MMIO interface and address space for local config space, map the request using that

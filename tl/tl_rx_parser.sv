@@ -13,7 +13,7 @@ import tl_pkg::*;
   output logic                   tl_rx_ready_o,
 
   // Memory Write to user
-  output memrq_t       memwr_rq_o,
+  output memrq_t                 memwr_rq_o,
   output logic                   memwr_rq_valid_o,
   input  logic                   memwr_rq_ready_i,
 
@@ -149,9 +149,18 @@ assign remaining_dw = length_dw - dw_count;
       end
       
       ST_DATA_BEAT: begin
-        if(memwr_data_valid_o && memwr_data_ready_i) begin
-          if (last_data_beat) begin
-            fsm_next = ST_IDLE;
+        if(pkt_type == TL_MWR) begin
+          if(memwr_data_valid_o && memwr_data_ready_i) begin
+            if (last_data_beat) begin
+              fsm_next = ST_IDLE;
+            end
+          end
+        end
+        else if (pkt_type == TL_CPLD) begin
+          if (cpl_valid_o && cpl_ready_i) begin
+            if (last_data_beat) begin
+              fsm_next = ST_IDLE;
+            end
           end
         end
       end
@@ -210,8 +219,9 @@ assign remaining_dw = length_dw - dw_count;
         
         default: pkt_type = TL_OTHERS;
       endcase
-      
-      length_dw    = {hdr_reg[17:16], hdr_reg[31:24]};  // Corrected bits [9:0]
+
+        // Length in DWs for MRd/MWr
+        length_dw    = {hdr_reg[17:16], hdr_reg[31:24]};  // Corrected bits [9:0]  
   end
 
 
@@ -320,10 +330,26 @@ end
 always_ff @(posedge clk or negedge rst_n) begin
   if (!rst_n) begin
     dw_count <= 10'd0;
-  end else if (fsm_state == ST_ROUTE_PKT && pkt_type == TL_MWR) begin
-      dw_count <= 10'd0; // No data in header beat for 4DW MWr
-  end else if (fsm_state == ST_DATA_BEAT && pkt_type == TL_MWR && memwr_data_ready_i && tl_rx_valid_i) begin
-      dw_count <= dw_count + ((remaining_dw > 10'd4) ? 10'd4 : remaining_dw);
+  end 
+  else if (fsm_state == ST_ROUTE_PKT && pkt_type == TL_MWR) begin
+      dw_count <= 10'd0; // No data in request header
+  end
+  else if(fsm_state == ST_ROUTE_PKT && pkt_type == TL_CPLD) begin
+      dw_count <= 10'd1; // One data DW in header
+  end
+  else if (fsm_state == ST_DATA_BEAT) begin
+      case(pkt_type)
+        TL_MWR: begin
+          if(memwr_data_ready_i && tl_rx_valid_i) begin
+            dw_count <= dw_count + ((remaining_dw > 10'd4) ? 10'd4 : remaining_dw);
+          end
+        end
+        TL_CPLD: begin
+          if(cpl_ready_i && cpl_valid_o) begin
+            dw_count <= dw_count + ((remaining_dw > 10'd4) ? 10'd4 : remaining_dw);
+          end
+        end
+      endcase
   end else if (fsm_state == ST_IDLE) begin
     dw_count <= 10'd0;
   end

@@ -14,9 +14,17 @@ module tl_tag_table #(
 
   // Metadata to store for allocated Tag
   input  logic [15:0]            alloc_req_id_i,   // Requester ID
-  input  logic [31:0]            alloc_addr_i,     
+  input  logic [63:0]            alloc_addr_i,     
   input  logic [9:0]             alloc_len_i,      // Length in DWs
   input  logic [2:0]             alloc_attr_i,     // Attributes (RO/NS etc.)
+  input  logic [2:0]             alloc_fmt_i,      // TLP format
+  input  logic [4:0]             alloc_pkt_type_i, // TLP type
+  input  logic [3:0]             alloc_first_be_i,
+  input  logic [3:0]             alloc_last_be_i,
+
+  input  logic [7:0]             alloc_bus_number_i,    // Bus number
+  input  logic [4:0]             alloc_device_number_i, // Device number
+  input  logic [2:0]             alloc_function_number_i,// Function number
 
   // =================================================
   // Lookup for Completion engine
@@ -26,15 +34,24 @@ module tl_tag_table #(
   output logic                   lookup_ready_o,   // Assert when metadata is valid
 
   output logic [15:0]            cpl_req_id_o,     // Requester ID
-  output logic [31:0]            cpl_addr_o,       // Lower Address
+  output logic [63:0]            cpl_addr_o,       // Lower Address
   output logic [9:0]             cpl_len_o,        // Length in DWs
   output logic [2:0]             cpl_attr_o,       // Attributes
+  output logic [2:0]             cpl_fmt_o,        // TLP format
+  output logic [4:0]             cpl_pkt_type_o,   // TLP type
+  output logic [3:0]             cpl_first_be_o,
+  output logic [3:0]             cpl_last_be_o,
+  
+  output logic [7:0]             cpl_bus_number_o,    // Bus number
+  output logic [4:0]             cpl_device_number_o, // Device number
+  output logic [2:0]             cpl_function_number_o,// Function number
 
   // =================================================
   // Free tag (from completion engine after CplD sent)
   // =================================================
   input  logic [TAG_W-1:0]       free_tag_i,
-  input  logic                   free_valid_i
+  input  logic                   free_valid_i,
+  output logic                   free_ready_o
 );
 
 
@@ -46,9 +63,16 @@ module tl_tag_table #(
   typedef struct packed {
     logic        valid;
     logic [15:0] requester_id;
-    logic [31:0] addr;
+    logic [63:0] addr;
     logic [9:0]  length;
     logic [2:0]  attr;
+    logic [2:0]  fmt;
+    logic [4:0]  pkt_type;
+    logic [3:0]  first_be;
+    logic [3:0]  last_be;
+    logic [7:0]  bus_number;
+    logic [4:0]  device_number;
+    logic [2:0]  function_number;
   } tag_ctx_t;
 
   tag_ctx_t ctx_table [0:DEPTH-1];
@@ -82,6 +106,13 @@ module tl_tag_table #(
           ctx_table[alloc_tag_o].addr         <= alloc_addr_i;
           ctx_table[alloc_tag_o].length       <= alloc_len_i;
           ctx_table[alloc_tag_o].attr         <= alloc_attr_i;
+          ctx_table[alloc_tag_o].fmt          <= alloc_fmt_i;
+          ctx_table[alloc_tag_o].pkt_type     <= alloc_pkt_type_i;
+          ctx_table[alloc_tag_o].first_be     <= alloc_first_be_i;
+          ctx_table[alloc_tag_o].last_be      <= alloc_last_be_i;
+          ctx_table[alloc_tag_o].bus_number      <= alloc_bus_number_i;
+          ctx_table[alloc_tag_o].device_number   <= alloc_device_number_i;
+          ctx_table[alloc_tag_o].function_number <= alloc_function_number_i;
         end
         
         2'b01: begin  // Only free
@@ -110,7 +141,13 @@ module tl_tag_table #(
           ctx_table[alloc_tag_o].addr         <= alloc_addr_i;
           ctx_table[alloc_tag_o].length       <= alloc_len_i;
           ctx_table[alloc_tag_o].attr         <= alloc_attr_i;
-          
+          ctx_table[alloc_tag_o].fmt          <= alloc_fmt_i;
+          ctx_table[alloc_tag_o].pkt_type     <= alloc_pkt_type_i;
+          ctx_table[alloc_tag_o].first_be     <= alloc_first_be_i;
+          ctx_table[alloc_tag_o].last_be      <= alloc_last_be_i;
+          ctx_table[alloc_tag_o].bus_number      <= alloc_bus_number_i;
+          ctx_table[alloc_tag_o].device_number   <= alloc_device_number_i;
+          ctx_table[alloc_tag_o].function_number <= alloc_function_number_i;
           // Invalidate freed tag
           ctx_table[free_tag_i].valid <= 1'b0;
         end
@@ -124,6 +161,7 @@ module tl_tag_table #(
 
   // Lookup logic - combinational read, always ready
   assign lookup_ready_o = 1'b1;  // Always ready to accept lookup requests
+  assign free_ready_o   = 1'b1;  // Always ready to accept frees
   
   // Combinational lookup outputs
   always_comb begin
@@ -133,12 +171,27 @@ module tl_tag_table #(
       cpl_addr_o   = ctx_table[lookup_tag_i].addr;
       cpl_len_o    = ctx_table[lookup_tag_i].length;
       cpl_attr_o   = ctx_table[lookup_tag_i].attr;
+      cpl_first_be_o = ctx_table[lookup_tag_i].first_be;
+      cpl_last_be_o = ctx_table[lookup_tag_i].last_be;
+      cpl_fmt_o    = ctx_table[lookup_tag_i].fmt;
+      cpl_pkt_type_o = ctx_table[lookup_tag_i].pkt_type;
+
+      cpl_bus_number_o     = ctx_table[lookup_tag_i].bus_number;
+      cpl_device_number_o  = ctx_table[lookup_tag_i].device_number;
+      cpl_function_number_o= ctx_table[lookup_tag_i].function_number;
     end else begin
       // Invalid tag: return zeros (error case - unexpected completion)
       cpl_req_id_o = 16'b0;
       cpl_addr_o   = 32'b0;
       cpl_len_o    = 10'b0;
       cpl_attr_o   = 3'b0;
+      cpl_first_be_o = 4'b0;
+      cpl_last_be_o = 4'b0;
+      cpl_fmt_o    = 3'b0;
+      cpl_pkt_type_o = 5'b0;
+      cpl_bus_number_o     = 8'b0;
+      cpl_device_number_o  = 5'b0;
+      cpl_function_number_o= 3'b0;
     end
   end
 

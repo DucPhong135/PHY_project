@@ -12,10 +12,15 @@ class tl_user_monitor extends uvm_monitor;
   virtual tl_user_if vif;
   uvm_analysis_port #(tl_user_seq_item) monitor_ap;
 
+
+  uvm_analysis_port #(tl_user_seq_item) cpl_ap;
+
+
   // Constructor
   function new(string name = "tl_user_monitor", uvm_component parent = null);
     super.new(name, parent);
     monitor_ap = new("monitor_ap", this);
+    cpl_ap     = new("cpl_ap", this);
   endfunction
 
   // Build phase: get virtual interface
@@ -29,17 +34,26 @@ class tl_user_monitor extends uvm_monitor;
   // Main run phase: monitor transactions
   task run_phase(uvm_phase phase);
     tl_user_seq_item user_item;
+    fork
+      monitor_commands();
+      monitor_mem_rd_completions();
+      monitor_cfg_rd_completions();
+      monitor_cfg_wr_completions();
+    join
+  endtask : run_phase
+
+  task monitor_commands();
+    tl_user_seq_item user_item;
     forever begin
       @(posedge vif.clk);
       if(vif.cmd_valid && vif.cmd_ready) begin
-        user_item = tl_user_seq_item::type_id::create("item");
+        user_item = tl_user_seq_item::type_id::create("cmd_item");
         collect_command(user_item);
-        // `uvm_info("TX_MON", "Captured User Transaction:", UVM_LOW);
-        // user_item.print();
         monitor_ap.write(user_item);
       end
     end
-  endtask : run_phase
+  endtask : monitor_commands
+  
 
   virtual task collect_command(tl_user_seq_item item);
     tl_cmd_t cmd;
@@ -54,51 +68,150 @@ class tl_user_monitor extends uvm_monitor;
     item.device       = cmd.device;
     item.function_num = cmd.function_num;
     item.reg_num      = cmd.reg_num;
+    item.config_data  = cmd.config_data;
     
-    if (item.is_write) begin
+    if (item.is_write && item.trans_type == CMD_MEM) begin
       collect_write_data(item);
     end
     
   endtask : collect_command
 
-  //------------------------------------------------------------------
-  // Collect Write Data from Interface
-  //------------------------------------------------------------------
+  task collect_write_data(tl_user_seq_item item);
   
-virtual task collect_write_data(tl_user_seq_item item);
-    int data_count = 0;
+    item.data_payload.delete();
+
+    while (item.data_payload.size() < item.length_dw) begin
+      @(posedge vif.clk);
+      if (vif.wready && vif.wvalid) begin
+        item.data_payload.push_back(vif.wdata[31:0]);
+      end
+    end
+  endtask : collect_write_data
+
+  task monitor_mem_rd_completions();
+    tl_user_seq_item cpl_item;
+    forever begin
+      @(posedge vif.clk);
+      vif.usr_read_rp_ready_i = 1'b1; // Always ready to accept data
+      if(vif.usr_read_rp_ready_i && vif.usr_read_rp_valid_o) begin
+        // Start of new memory read completion
+        cpl_item = tl_user_seq_item::type_id::create("mem_rd_cpl");
+        `uvm_info("TL_USER_MON", "Detected Memory Read Completion Request", UVM_LOW)
+        vif.usr_read_rp_ready_i = 1'b0;
+        collect_mem_rd_completion(cpl_item);
+        
+        `uvm_info("TL_USER_MON", $sformatf(
+            "Captured Memory Read Completion data:"
+        ), UVM_LOW)
+
+        cpl_item.print();
+        cpl_ap.write(cpl_item);
+      end
+    end
+  endtask : monitor_mem_rd_completions
+
+
+  virtual task collect_mem_rd_completion(tl_user_seq_item item);
+    bit done = 0;
+    
+    // Capture first beat (already validated sop)
+    item.trans_type = CMD_MEM;
+    item.is_write   = 1'b0;
+    item.addr       = vif.usr_read_rp_addr_o;
+    item.length_dw  = vif.usr_read_rp_length_o;
+    item.first_be   = vif.usr_first_be_o;
+    item.last_be    = vif.usr_last_be_o;
+    item.is_response = 1'b1;
     
     item.data_payload.delete();
     
-    `uvm_info("TL_USER_MON", $sformatf(
-        "Collecting %0d DW of write data...", item.length_dw), UVM_HIGH)
+    vif.usr_rready_i = 1'b1;
+    // Collect remaining beats
+  while (!done) begin
+    @(posedge vif.clk);
+    vif.usr_rready_i = 1'b1;  // Keep ready asserted continuously
     
-    // ✅ Collect all data beats - wait for actual handshakes
-    while (data_count < item.length_dw) begin
-        @(posedge vif.clk);
-        
-        // Only capture when both valid and ready are asserted
-        if (vif.wvalid && vif.wready) begin
-            item.data_payload.push_back(vif.wdata.data[31:0]);
-            item.data_payload.push_back(vif.wdata.data[63:32]);
-            item.data_payload.push_back(vif.wdata.data[95:64]);
-            item.data_payload.push_back(vif.wdata.data[127:96]);
-            if(data_count + 4 >= item.length_dw)
-                data_count += item.length_dw - data_count; // Handle last partial beat
-            else
-                data_count += 4; // Each beat is 4 DW (128 bits)
-            
-            `uvm_info("TL_USER_MON", $sformatf(
-                "  Captured write data[%0d/%0d]: 0x%08h", 
-                data_count, item.length_dw, vif.wdata), UVM_HIGH)
-        end
+    if (vif.usr_rvalid_o && vif.usr_rready_i) begin
+      item.data_payload.push_back(vif.usr_rdata_o[31:0]);
+      if (vif.usr_reop_o) begin
+        done = 1;
+      end
+      // Don't add extra clock edge or deassert ready here
     end
+  end
+
+// Clean up after loop
+  vif.usr_rready_i = 1'b0;
     
-    `uvm_info("TL_USER_MON", $sformatf(
-        "Write data collection complete: %0d DW collected", 
-        data_count), UVM_MEDIUM)
-    
-endtask : collect_write_data
+  endtask : collect_mem_rd_completion
+
+
+  
+
+task monitor_cfg_rd_completions();
+    tl_user_seq_item cpl_item;
+    forever begin
+      @(posedge vif.clk);
+      vif.cfg_rd_ready_i = 1'b1;
+      if(vif.cfg_rd_valid_o && vif.cfg_rd_ready_i) begin
+        cpl_item = tl_user_seq_item::type_id::create("cfg_rd_cpl");
+        
+        cpl_item.trans_type = CMD_CFG;
+        cpl_item.is_write   = 1'b0;
+        cpl_item.length_dw  = 1;
+        cpl_item.tag      = vif.cfg_rd_tag_o;
+        cpl_item.status   = vif.cfg_rd_status_o;
+        cpl_item.bus      = vif.cfg_rd_bus_number_o;
+        cpl_item.device   = vif.cfg_rd_device_number_o;
+        cpl_item.function_num = vif.cfg_rd_function_number_o;
+        cpl_item.is_response = 1'b1;
+
+        // Config read returns 1 DW
+        cpl_item.data_payload.delete();
+        cpl_item.data_payload.push_back(vif.cfg_rd_data_o);
+        
+        `uvm_info("TL_USER_MON", $sformatf(
+          "Captured Config Read Completion:"
+        ), UVM_LOW)
+        
+        cpl_item.print();
+        cpl_ap.write(cpl_item);
+        vif.cfg_rd_ready_i = 1'b0;
+      end
+      
+    end
+  endtask : monitor_cfg_rd_completions
+
+  task monitor_cfg_wr_completions();
+    tl_user_seq_item cpl_item;
+    forever begin
+      @(posedge vif.clk);
+      vif.cfg_wr_ready_i = 1'b1;
+      if(vif.cfg_wr_valid_o && vif.cfg_wr_ready_i) begin
+        cpl_item = tl_user_seq_item::type_id::create("cfg_wr_cpl");
+        
+        cpl_item.trans_type = CMD_CFG;
+        cpl_item.is_write   = 1'b1;
+        cpl_item.length_dw  = 0;  // No data for config write completion
+        cpl_item.tag      = vif.cfg_wr_tag_o;
+        cpl_item.status   = vif.cfg_wr_status_o;
+        cpl_item.bus      = vif.cfg_wr_bus_number_o;
+        cpl_item.device   = vif.cfg_wr_device_number_o;
+        cpl_item.function_num = vif.cfg_wr_function_number_o;
+        cpl_item.is_response = 1'b1;
+        
+        cpl_item.data_payload.delete();
+        
+        `uvm_info("TL_USER_MON", $sformatf(
+          "Captured Config Write Completion:"
+        ), UVM_LOW)
+        
+        cpl_item.print();
+        cpl_ap.write(cpl_item);
+        vif.cfg_wr_ready_i = 1'b0;
+      end
+    end
+  endtask : monitor_cfg_wr_completions
 
 endclass : tl_user_monitor
 

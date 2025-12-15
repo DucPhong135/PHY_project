@@ -53,7 +53,7 @@ class tl_user_driver extends uvm_driver #(tl_user_seq_item);
     vif.send_command(hw_cmd);
     
     // Step 3: Send data (if write)
-    if (item.is_write) begin
+    if (item.is_write && item.trans_type == CMD_MEM) begin
       // Convert payload to hardware beats
       convert_to_beats(item, beat_queue);
       vif.send_write_beats(beat_queue);

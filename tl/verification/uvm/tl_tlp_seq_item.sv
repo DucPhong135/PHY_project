@@ -33,6 +33,8 @@ class tl_tlp_seq_item extends uvm_sequence_item;
   bit [4:0] device_number;
   bit [2:0] function_number;
   bit [11:0] register_number;
+  bit [31:0] config_data;
+
   // Payload data
   rand bit [31:0] payload_data[$];       // Queue of payload DWs
   
@@ -58,6 +60,7 @@ class tl_tlp_seq_item extends uvm_sequence_item;
     `uvm_field_int(device_number, UVM_ALL_ON | UVM_DEC)
     `uvm_field_int(function_number,UVM_ALL_ON | UVM_DEC)
     `uvm_field_int(register_number,UVM_ALL_ON | UVM_HEX)
+    `uvm_field_int(config_data,   UVM_ALL_ON | UVM_HEX)
     `uvm_field_queue_int(payload_data, UVM_ALL_ON | UVM_HEX)
   `uvm_object_utils_end
   
@@ -289,6 +292,13 @@ class tl_tlp_seq_item extends uvm_sequence_item;
     device_number   = dw2[15:11];
     function_number = dw2[10:8];
     register_number = {dw2[19:16], dw2[31:26]}; // Byte-swapped
+
+    // DW3: Write Data for Config Write
+    if (fmt[1]) begin  // Config Write (with data)
+      config_data = dw3;
+    end else begin
+      config_data = 32'h0;
+    end
   endfunction
 
   //------------------------------------------------------------------
@@ -388,38 +398,71 @@ class tl_tlp_seq_item extends uvm_sequence_item;
     bit [31:0] dw0, dw1, dw2, dw3;
     
     
-    // DW0: [7:5]=fmt, [4:0]=type, [14:12]=TC, [31:24,17:16]=length
-    dw0[4:0]   = txn.pkt_type;
-    dw0[7:5]   = txn.fmt;
-    dw0[11:8] = 4'b0000;
-    dw0[14:12] = txn.tc;
-    dw0[15]    = 1'b0; // T9
-    dw0[17:16] = txn.length[9:8];
-    dw0[23:18] = 6'b000000;
-    dw0[31:24] = txn.length[7:0];
-    
-    // DW1: Requester ID, Tag, Last BE, First BE
-    dw1 = {txn.last_be, txn.first_be, 
-           txn.tag, 
-           txn.requester_id[7:0], txn.requester_id[15:8]};
-    
-    // DW2 & DW3: Address (format depends on 3DW vs 4DW)
-    if (is_4dw_hdr) begin
-      // 4DW header: DW2=upper 32 bits, DW3=lower 32 bits
-      dw2 = {txn.address[39:32], txn.address[47:40], 
-             txn.address[55:48], txn.address[63:56]};
-      dw3 = {txn.address[7:2], 2'b00, 
-             txn.address[15:8], txn.address[23:16], txn.address[31:24]};
+    // DW0: [7:5]=fmt, [4:0]=type, [14:12]=TC, [31:24,17:16]=
+    if(txn.pkt_type == 5'b01010) begin
+      // Completion TLP
+      dw0[4:0]   = txn.pkt_type;
+      dw0[7:5]   = txn.fmt;
+      dw0[11:8] = 4'b0000;
+      dw0[14:12] = txn.tc;
+      dw0[15]    = 1'b0; // T9
+      dw0[23:18] = 6'b000000;
+      dw0[17:16] = txn.length[9:8];
+      dw0[31:24] = txn.length[7:0];
+      
+      dw1[7:0] = txn.completer_id[15:8];
+      dw1[15:8] = txn.completer_id[7:0];
+      dw1[19:16] = txn.byte_count[11:8];
+      dw1[20] = 1'b0;
+      dw1[23:21] = txn.status;
+      dw1[31:24] = txn.byte_count[7:0];
+      
+      dw2[7:0] = txn.requester_id[15:8];
+      dw2[15:8] = txn.requester_id[7:0];
+      dw2[23:16] = txn.tag;
+      dw2[30:24] = txn.lower_addr[6:0];
+      dw2[31] = 1'b0; // Reserved
+      dw3 = 32'h0;  // will be filled with first data DW if applicable
     end
     else begin
-      // 3DW header: DW2=address, DW3=reserved/first data DW
-      dw2 = {txn.address[7:2], 2'b00,
-             txn.address[15:8], txn.address[23:16], txn.address[31:24]};
-      dw3 = 32'h0;  // Will be filled with first data DW if applicable
+      dw0[4:0]   = txn.pkt_type;
+      dw0[7:5]   = txn.fmt;
+      dw0[11:8] = 4'b0000;
+      dw0[14:12] = txn.tc;
+      dw0[15]    = 1'b0; // T9
+      dw0[17:16] = txn.length[9:8];
+      dw0[23:18] = 6'b000000;
+      dw0[31:24] = txn.length[7:0];
+      
+      // DW1: Requester ID, Tag, Last BE, First BE
+      dw1 = {txn.last_be, txn.first_be, 
+            txn.tag, 
+            txn.requester_id[7:0], txn.requester_id[15:8]};
+      
+      // DW2 & DW3: Address (format depends on 3DW vs 4DW)
+      if (is_4dw_hdr) begin
+        // 4DW header: DW2=upper 32 bits, DW3=lower 32 bits
+        dw2 = {txn.address[39:32], txn.address[47:40], 
+              txn.address[55:48], txn.address[63:56]};
+        dw3 = {txn.address[7:2], 2'b00, 
+              txn.address[15:8], txn.address[23:16], txn.address[31:24]};
+      end
+      else begin
+        // 3DW header: DW2=address, DW3=reserved/first data DW
+        dw2 = {txn.address[7:2], 2'b00,
+              txn.address[15:8], txn.address[23:16], txn.address[31:24]};
+        dw3 = 32'h0;  // Will be filled with first data DW if applicable
+      end
     end
     
     return {dw3, dw2, dw1, dw0};
   endfunction
+
+  function need_cpl();
+    return ((pkt_type == 5'b00000) && (fmt == 3'b000 || fmt ==3'b001)) || // Memory Read
+           ((pkt_type == 5'b00100));
+  endfunction
+
   //------------------------------------------------------------------
 // Comparison function - Validates TLP header against command
 // Now includes first_be and last_be validation

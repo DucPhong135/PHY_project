@@ -63,13 +63,34 @@ module top ();
     .usr_wready_o    (user_if.wready),
     
     // User read data interface (output)
-    .usr_rtag_o      (user_if.rtag),
-    .usr_raddr_o     (user_if.raddr),
-    .usr_rdata_o     (user_if.rdata),
-    .usr_rvalid_o    (user_if.rvalid),
-    .usr_rsop_o      (user_if.rsop),
-    .usr_reop_o      (user_if.reop),
-    .usr_rready_i    (user_if.rready),
+    .usr_read_rp_addr_o (user_if.usr_read_rp_addr_o),
+    .usr_read_rp_length_o (user_if.usr_read_rp_length_o),
+    .usr_first_be_o    (user_if.usr_first_be_o),
+    .usr_last_be_o     (user_if.usr_last_be_o),
+    .usr_read_rp_valid_o (user_if.usr_read_rp_valid_o),
+    .usr_read_rp_ready_i (user_if.usr_read_rp_ready_i),
+
+    .usr_rdata_o      (user_if.usr_rdata_o),
+    .usr_reop_o       (user_if.usr_reop_o),
+    .usr_rvalid_o     (user_if.usr_rvalid_o),
+    .usr_rready_i     (user_if.usr_rready_i),
+
+    .cfg_rd_tag_o   (user_if.cfg_rd_tag_o),     // Tag of config read request
+    .cfg_rd_data_o  (user_if.cfg_rd_data_o),    // Config read data (1 DW)
+    .cfg_rd_status_o(user_if.cfg_rd_status_o),  // Completion status
+    .cfg_rd_bus_number_o     (user_if.cfg_rd_bus_number_o),
+    .cfg_rd_device_number_o  (user_if.cfg_rd_device_number_o),
+    .cfg_rd_function_number_o(user_if.cfg_rd_function_number_o),
+    .cfg_rd_valid_o (user_if.cfg_rd_valid_o),   // Config read completion valid
+    .cfg_rd_ready_i (user_if.cfg_rd_ready_i),   // Config read completion
+
+    .cfg_wr_tag_o   (user_if.cfg_wr_tag_o),     // Tag of config write request
+    .cfg_wr_status_o(user_if.cfg_wr_status_o),  // Completion status
+    .cfg_wr_bus_number_o     (user_if.cfg_wr_bus_number_o),
+    .cfg_wr_device_number_o  (user_if.cfg_wr_device_number_o),
+    .cfg_wr_function_number_o(user_if.cfg_wr_function_number_o),
+    .cfg_wr_valid_o (user_if.cfg_wr_valid_o),   // Config write completion valid
+    .cfg_wr_ready_i (user_if.cfg_wr_ready_i),   // Config write completion ready 
     
     // Memory Write Request Channel
     .memwr_req_o       (mem_if.memwr_req),
@@ -96,11 +117,20 @@ module top ();
         // uvm_config_db#(virtual tl_user_if)::set(null, "uvm_test_top.tx_tb.user_env.user_agent.*", "user_vif", user_if);
         // uvm_config_db#(virtual tl_dll_if)::set(null, "uvm_test_top.tx_tb.dll_env.dll_agent.*", "dll_vif", dll_if);
         // run_test("tl_tx_test");
-        uvm_config_db#(virtual tl_user_if)::set(null, "uvm_test_top.rx_tb.user_env.user_agent.*", "user_vif", user_if);
-        uvm_config_db#(virtual tl_dll_if)::set(null, "uvm_test_top.rx_tb.dll_env.dll_agent.*", "dll_vif", dll_if);
-        uvm_config_db#(virtual mem_if)::set(null, "uvm_test_top.rx_tb.memory_env.agent.*", "mem_vif", mem_if);
-        uvm_config_db#(virtual mem_if)::set(null, "uvm_test_top.rx_tb.memory_env.*", "mem_vif", mem_if);
-        run_test("tl_rx_test");
+
+
+        // uvm_config_db#(virtual tl_user_if)::set(null, "uvm_test_top.rx_tb.user_env.user_agent.*", "user_vif", user_if);
+        // uvm_config_db#(virtual tl_dll_if)::set(null, "uvm_test_top.rx_tb.dll_env.dll_agent.*", "dll_vif", dll_if);
+        // uvm_config_db#(virtual mem_if)::set(null, "uvm_test_top.rx_tb.memory_env.agent.*", "mem_vif", mem_if);
+        // uvm_config_db#(virtual mem_if)::set(null, "uvm_test_top.rx_tb.memory_env.*", "mem_vif", mem_if);
+        // run_test("tl_rx_test");
+
+        uvm_config_db#(virtual tl_user_if)::set(null, "uvm_test_top.cpl_tb.user_env.user_agent.*", "user_vif", user_if);
+        uvm_config_db#(virtual tl_dll_if)::set(null, "uvm_test_top.cpl_tb.dll_env.dll_agent.*", "dll_vif", dll_if);
+        uvm_config_db#(virtual mem_if)::set(null, "uvm_test_top.cpl_tb.memory_env.agent.*", "mem_vif", mem_if);
+        uvm_config_db#(virtual mem_if)::set(null, "uvm_test_top.cpl_tb.memory_env.*", "mem_vif", mem_if);
+
+        run_test("tl_cpl_test");
     end
 
 endmodule: top

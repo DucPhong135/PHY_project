@@ -25,13 +25,36 @@ interface tl_user_if(
   //------------------------------------------------------------------
   // User read data interface
   //------------------------------------------------------------------
-  logic [7:0]  rtag;
-  logic [63:0] raddr;
-  tl_data_t    rdata;
-  logic        rvalid;
-  logic        rsop;
-  logic        reop;
-  logic        rready;
+  logic [63:0]            usr_read_rp_addr_o;
+  logic [9:0]             usr_read_rp_length_o;
+  logic [3:0]             usr_first_be_o;
+  logic [3:0]             usr_last_be_o;
+  logic                   usr_read_rp_valid_o;
+  logic                   usr_read_rp_ready_i;
+
+  logic [31:0]         usr_rdata_o;
+  logic                usr_reop_o;
+  logic                usr_rvalid_o;
+  logic                usr_rready_i;         
+
+    // Config Read Completion
+  logic [7:0]             cfg_rd_tag_o;     // Tag of config read request
+  logic [31:0]            cfg_rd_data_o;    // Config read data (1 DW)
+  logic [2:0]             cfg_rd_status_o;  // Completion status
+  logic [7:0]             cfg_rd_bus_number_o;
+  logic [4:0]             cfg_rd_device_number_o;
+  logic [2:0]             cfg_rd_function_number_o;
+  logic                   cfg_rd_valid_o;   // Config read completion valid
+  logic                   cfg_rd_ready_i;   // Config read completion ready
+  
+  // Config Write Completion
+  logic [7:0]             cfg_wr_tag_o;     // Tag of config write request
+  logic [2:0]             cfg_wr_status_o;  // Completion status
+  logic [7:0]             cfg_wr_bus_number_o;
+  logic [4:0]             cfg_wr_device_number_o;
+  logic [2:0]             cfg_wr_function_number_o;
+  logic                   cfg_wr_valid_o;   // Config write completion valid
+  logic                   cfg_wr_ready_i;    // Config write completion ready
 
 
   //------------------------------------------------------------------
@@ -78,23 +101,6 @@ interface tl_user_if(
     wvalid <= 1'b0;
   endtask
 
-  //------------------------------------------------------------------
-  // Monitor Task: Wait for read data
-  //------------------------------------------------------------------
-  task wait_for_read_data(output tl_data_t data_out, output bit is_last);
-    @(posedge clk);
-    rready <= 1'b1;
-    
-    while (!rvalid) begin
-      @(posedge clk);
-    end
-    
-    data_out = rdata;
-    is_last  = reop;
-    
-    @(posedge clk);
-    rready <= 1'b0;
-  endtask
 
   //------------------------------------------------------------------
   // Utility Task: Initialize signals
@@ -104,7 +110,9 @@ interface tl_user_if(
     cmd         <= '0;
     wdata       <= '0;
     wvalid      <= 1'b0;
-    rready      <= 1'b0;
+    usr_rready_i <= 1'b0;
+    cfg_rd_ready_i <= 1'b0;
+    cfg_wr_ready_i   <= 1'b0;
   endtask
 
   //------------------------------------------------------------------

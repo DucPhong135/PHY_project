@@ -105,8 +105,8 @@ module tl_payload_mux
 
       HDR_BEAT: begin
         if (tx_pkt_ready_i) begin
-          if (total_data_dw == 12'd0 || hdr_reg[6] == 1'b0)
-            next_state = IDLE;      // Header-only (MRd, CfgRd)
+          if ((hdr_reg[6] == 1'b0) || hdr_reg[4:0] == 5'b00100)
+            next_state = IDLE;      // Header-only (MRd, CfgRd, CfgWr)
           else if (is_3dw_header && wdata_valid_i)
             next_state = DATA_BEAT; // 3DW header needs data for header beat
           else if(!is_3dw_header)
@@ -224,7 +224,7 @@ module tl_payload_mux
     case (state)
       HDR_BEAT: begin
         if (is_3dw_header && (total_data_dw != 12'd0)) begin
-          if(hdr_reg[6] == 1'b1) begin // Write request with 3DW header
+          if(hdr_reg[6] == 1'b1 && hdr_reg[4:0] == 5'b00000) begin // Write request with 3DW header
             tx_pkt_o.data[95:0]       = hdr_reg[95:0];
             tx_pkt_o.data[127:96]     = wdata_i[31:0]; // First data DW packed
             tx_pkt_o.sop        = 1'b1;
@@ -235,9 +235,12 @@ module tl_payload_mux
             wdata_ready_o       = tx_pkt_ready_i;
             wdata_consumed_dw_o   = 2'd1;  // ← Only 1 DW consumed
           end
-          else if(hdr_reg[6] == 1'b0) begin // Read request with 3DW header
+          else if(hdr_reg[6] == 1'b0 || hdr_reg[4:0] == 5'b00100) begin // Read request with 3DW header
             tx_pkt_o.data[95:0]       = hdr_reg[95:0];
-            tx_pkt_o.data[127:96]     = 32'h0; // No data for read
+            if(hdr_reg[4:0] == 5'b00100)
+              tx_pkt_o.data[127:96]   = hdr_reg[127:96]; // Tag in DW3 for CfgRd
+            else
+              tx_pkt_o.data[127:96]     = 32'h0; // No data for read
             tx_pkt_o.sop        = 1'b1;
             tx_pkt_o.eop        = 1'b1;
             tx_pkt_o.is_dllp    = 1'b0;

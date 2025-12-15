@@ -20,6 +20,7 @@ class tl_tx_test extends uvm_test;
     super.build_phase(phase);
     uvm_config_db#(bit)::set(this, "tx_tb", "tx_scoreboard_enabled", 1'b1);
     uvm_config_db#(bit)::set(this, "tx_tb", "rx_scoreboard_enabled", 1'b0);
+    uvm_config_db#(bit)::set(this, "tx_tb", "cpl_scoreboard_enabled", 1'b0);
     tx_tb = tl_tb::type_id::create("tx_tb", this);
 
     uvm_config_db#(uvm_object_wrapper)::set(this, "tx_tb.user_env.user_agent.user_sequencer.run_phase", "default_sequence", tx_seq::get_type());

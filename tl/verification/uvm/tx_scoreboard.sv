@@ -57,21 +57,41 @@ class tx_scoreboard extends uvm_scoreboard;
     expected = expected_user.pop_front();
       // Perform detailed comparison
     if (compare_transactions(expected, tlp)) begin
-        `uvm_info("TX_SCOREBOARD", $sformatf(
-            "MATCH: User command matched TLP\n  Expected: %s %s Addr=0x%016h Len=%0dDW\n  Actual:   %s Addr=0x%016h Len=%0dDW Tag=0x%02h",
-            expected.trans_type.name(),
-            expected.is_write ? "Write" : "Read",
-            expected.addr,
-            expected.length_dw,
-            actual.get_type_str(),
-            actual.address,
-            actual.length,
-            actual.tag), UVM_LOW)
-        
+        if(expected.trans_type == CMD_MEM) begin
+            `uvm_info("TX_SCOREBOARD", $sformatf(
+                "MATCH: User command matched TLP\n  Expected: %s %s Addr=0x%016h Len=%0dDW\n  Actual:   %s Addr=0x%016h Len=%0dDW Tag=0x%02h",
+                expected.trans_type.name(),
+                expected.is_write ? "Write" : "Read",
+                expected.addr,
+                expected.length_dw,
+                actual.get_type_str(),
+                actual.address,
+                actual.length,
+                actual.tag), UVM_LOW)
+        end
+        else begin
+            `uvm_info("TX_SCOREBOARD", $sformatf(
+                "MATCH: User command matched TLP\n  Expected: %s %s Bus=%0d Dev=%0d Func=%0d Reg=%0d Config_data=0'h%0h\n  Actual:   %s Bus=%0d Dev=%0d Func=%0d Reg=%0d Config_data=0'h%0h Tag=0x%02h",
+                expected.trans_type.name(),
+                expected.is_write ? "Write" : "Read",
+                expected.bus,
+                expected.device,
+                expected.function_num,
+                expected.reg_num,
+                expected.config_data,
+                actual.get_type_str(),
+                actual.bus_number,
+                actual.device_number,
+                actual.function_number,
+                actual.register_number,
+                actual.config_data,
+                actual.tag), UVM_LOW)
+        end
         num_matches++;
     end
     else begin
-      `uvm_error("TX_SCOREBOARD", {
+        if(expected.trans_type == CMD_MEM) begin
+            `uvm_error("TX_SCOREBOARD", {
           "MISMATCH: Expected and actual transactions differ\n",
           $sformatf("  Expected: %s %s Addr=0x%016h Len=%0dDW\n",
               expected.trans_type.name(),
@@ -83,7 +103,29 @@ class tx_scoreboard extends uvm_scoreboard;
               actual.address,
               actual.length,
               actual.tag)
-      })
+        });
+        end
+        else begin
+            `uvm_error("TX_SCOREBOARD", {
+          "MISMATCH: Expected and actual transactions differ\n",
+          $sformatf("  Expected: %s %s Bus=%0d Dev=%0d Func=%0d Reg=%0d Config_data=0'h%0h\n",
+                expected.trans_type.name(),
+                expected.is_write ? "Write" : "Read",
+                expected.bus,
+                expected.device,
+                expected.function_num,
+                expected.reg_num,
+                expected.config_data),
+          $sformatf("  Actual:   %s Bus=%0d Dev=%0d Func=%0d Reg=%0d Config_data=0'h%0h Tag=0x%02h",
+              actual.get_type_str(),
+              actual.bus_number,
+              actual.device_number,
+              actual.function_number,
+              actual.register_number,
+              actual.config_data,
+              actual.tag)
+        });
+        end
         num_mismatches++;
         mismatch_tlp.push_back(actual);
     end
@@ -164,24 +206,21 @@ class tx_scoreboard extends uvm_scoreboard;
         end
     end
     else begin
-        // Config transaction - address is in register number field
-        // Config address format: [11:0] = {Bus[7:0], Dev[4:0], Func[2:0], Reg[5:0], 2'b00}
-        expected_cfg_addr = {
-        32'h0000_0000,
-        user.bus,
-        user.device,
-        user.function_num,
-        4'b0000,
-        user.reg_num,
-        2'b00
-        };
-        
-        if (tlp.address != expected_cfg_addr) begin
-        `uvm_error("TX_SCB_CMP", $sformatf(
-            "Config address mismatch:\n  Expected: 0x%016h (Bus=%0d Dev=%0d Func=%0d Reg=%0d)\n  Actual:   0x%016h",
-            expected_cfg_addr, user.bus, user.device, user.function_num, user.reg_num,
-            tlp.address))
-        return 0;
+        // Config transaction - check 32-bit config address mapping
+        bit [7:0] expected_cfg_bus = user.bus;
+        bit [4:0] expected_cfg_device = user.device;
+        bit [2:0] expected_cfg_function = user.function_num;
+        bit [9:0] expected_cfg_reg = user.reg_num; // DWORD aligned
+
+        if (tlp.bus_number != expected_cfg_bus ||
+            tlp.device_number != expected_cfg_device ||
+            tlp.function_number != expected_cfg_function ||
+            tlp.register_number != expected_cfg_reg) begin
+            `uvm_error("TX_SCB_CMP", $sformatf(
+                "Config address mismatch: Expected Bus=%0d Dev=%0d Func=%0d Reg=%0d, Actual Bus=%0d Dev=%0d Func=%0d Reg=%0d",
+                expected_cfg_bus, expected_cfg_device, expected_cfg_function, expected_cfg_reg,
+                tlp.bus_number, tlp.device_number, tlp.function_number, tlp.register_number))
+            return 0;
         end
     end
     if (tlp.length != user.length_dw) begin
@@ -218,7 +257,12 @@ class tx_scoreboard extends uvm_scoreboard;
             2'b10: expected_first_be = 4'b1100;
             2'b11: expected_first_be = 4'b1000;
         endcase
-        expected_last_be = 4'b1111;
+        if(tlp.length == 1) begin
+            expected_last_be = 4'b0000;
+        end
+        else begin
+            expected_last_be = 4'b1111;
+        end
     end
 
     if (tlp.first_be != expected_first_be) begin
@@ -236,15 +280,24 @@ class tx_scoreboard extends uvm_scoreboard;
     end
 
 
-    if (user.is_write) begin
+    if (user.is_write && user.trans_type == CMD_MEM) begin
     // Check payload size matches
         for(i = 0; i < user.length_dw; i++) begin
             if (user.data_payload[i] !== tlp.payload_data[i]) begin
                 `uvm_error("TX_SCB_CMP", $sformatf(
-                    "Write data mismatch at DW %0d: Expected=0x%08h, Actual=0x%08h",
+                    "Memory write data mismatch at DW %0d: Expected=0x%08h, Actual=0x%08h",
                     i, user.data_payload[i], tlp.payload_data[i]))
                 return 0;
             end
+        end
+    end
+    else if(user.is_write && user.trans_type == CMD_CFG) begin
+        // Config Write - check config data
+        if(tlp.config_data !== user.config_data) begin
+            `uvm_error("TX_SCB_CMP", $sformatf(
+                "Config write data mismatch: Expected=0x%08h, Actual=0x%08h",
+                user.config_data, tlp.config_data))
+            return 0;
         end
     end
     else begin
