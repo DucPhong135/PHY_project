@@ -47,9 +47,6 @@ typedef struct packed {
 //----------------------------------------------------------------
 typedef struct packed {
     logic [127:0] data;      // payload data (128b = 4 DWs)
-    logic [63:0]  addr;      // target address (from TLP header, incremented per beat)
-    logic [15:0]  be;        // byte enables (1 bit per byte of data)
-    logic         sop;       // start of packet
     logic         eop;       // end of packet
 } tl_data_t;
 

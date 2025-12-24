@@ -1,0 +1,74 @@
+module cfg_space #(
+
+  parameter VENDOR_ID   = 16'h1234,
+  parameter DEVICE_ID   = 16'hABCD,
+  parameter CLASS_CODE  = 24'h010601,
+  parameter REV_ID      = 8'h01,
+
+  parameter logic [4:0] DEV_NUM  = 5'd0,
+  parameter logic [2:0] FUNC_NUM = 3'd0
+)(
+  input  logic         clk,
+  input  logic         rst_n,
+
+  // Config-space TLP request interface
+  input  logic         cfg_rd_en,
+  input  logic         cfg_wr_en,
+  input  logic [9:0]   cfg_addr_dw,
+  input  logic [31:0]  cfg_wdata,
+  input  logic [3:0]   cfg_be,
+
+  output logic [15:0]  requester_id_o,
+
+  output logic [31:0]  cfg_rdata
+);
+
+  logic [31:0] cfg_regs [0:63];
+
+  logic [7:0]  bus_num_r;
+
+
+
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      // DW0: Vendor | Device
+      cfg_regs[0] <= {DEVICE_ID, VENDOR_ID};
+
+      // DW1: Command / Status
+      cfg_regs[1] <= 32'h0000_0000;
+
+      // DW2: Class Code | Revision ID
+      cfg_regs[2] <= {CLASS_CODE, REV_ID};
+
+      // DW3: Header Type, BIST, etc.
+      cfg_regs[3] <= 32'h0000_0000;
+
+      // DW4-DW5: BAR0..BAR1 (example)
+      cfg_regs[4] <= 32'hFFFF_F000;   // BAR0 size mask
+      cfg_regs[5] <= 32'h0000_0000;   // BAR1
+
+      // DW6: Primary / Secondary / Subordinate Bus #
+      cfg_regs[6] <= 32'h0000_0000;   // will be programmed by RC
+      bus_num_r   <= 8'd0;
+
+      // Rest to zeros
+      for (int i = 7; i < 64; i++)
+        cfg_regs[i] <= '0;
+    end
+    else if (cfg_wr_en) begin
+      if (cfg_addr_dw > 2) begin
+        for (int b = 0; b < 4; b++) begin
+          if (cfg_be[b])
+            cfg_regs[cfg_addr_dw][8*b +: 8] <= cfg_wdata[8*b +: 8];
+        end
+      end
+      if (cfg_addr_dw == 10'd6) begin
+        bus_num_r <= cfg_wdata[23:16];        
+      end
+    end
+  end
+
+  assign cfg_rdata = (cfg_rd_en) ? cfg_regs[cfg_addr_dw] : 32'h0;
+
+  assign requester_id_o = { bus_num_r, DEV_NUM, FUNC_NUM };
+endmodule
