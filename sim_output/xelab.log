@@ -1,0 +1,38 @@
+Vivado Simulator v2023.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: D:\Vivado\2023.2\bin\unwrapped\win64.o\xelab.exe -debug typical -timescale 1ns/1ps -top xil_defaultlib.top -snapshot tb_snapshot -L uvm 
+Multi-threading is on. Using 18 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+WARNING: [VRFC 10-3597] non-void function 'parse_config_rq' called as a task without void casting [D:/Verilog_project/SerDes/tl/Verification/tl_tlp_seq_item.sv:172]
+WARNING: [VRFC 10-3597] non-void function 'write_user_cpl' called as a task without void casting [D:/Verilog_project/SerDes/tl/Verification/cpl_scoreboard.sv:28]
+WARNING: [VRFC 10-3597] non-void function 'write_dll_cpl' called as a task without void casting [D:/Verilog_project/SerDes/tl/Verification/cpl_scoreboard.sv:32]
+WARNING: [VRFC 10-3597] non-void function 'compare_cpls' called as a task without void casting [D:/Verilog_project/SerDes/tl/Verification/cpl_scoreboard.sv:184]
+WARNING: [VRFC 10-3645] port 'cplh_credit_consume_o' remains unconnected for this instance [D:/Verilog_project/SerDes/tl/Src/tl_top.sv:419]
+Completed static elaboration
+Starting simulation data flow analysis
+WARNING: [XSIM 43-4468] File : /proj/xbuilds/SWIP/9999.0_0820_0302/installs/lin64/Vivado/2024.1/data/system_verilog/uvm_1.2/xlnx_uvm_package.sv, Line : 25994, RANDC variable size more than 8 bits. This will be treated as a RAND variable instead.
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling package uvm.uvm_pkg
+Compiling package std.std
+Compiling package xil_defaultlib.tl_uvm_pkg
+Compiling package xil_defaultlib.tl_pkg
+Compiling module xil_defaultlib.tl_user_if
+Compiling module xil_defaultlib.tl_dll_if
+Compiling module xil_defaultlib.mem_if
+Compiling module xil_defaultlib.tl_tag_table(DEPTH=256)
+Compiling module xil_defaultlib.tl_hdr_gen
+Compiling module xil_defaultlib.tl_payload_mux
+Compiling module xil_defaultlib.tl_tx_queue_router(QUEUE_DEPTH=3...
+Compiling module xil_defaultlib.tl_fifo_default
+Compiling module xil_defaultlib.tl_credit_mgr(PH_WIDTH=10,PD_WID...
+Compiling module xil_defaultlib.tl_cpl_gen
+Compiling module xil_defaultlib.cfg_space(DEV_NUM=5'b01010,FUNC_...
+Compiling module xil_defaultlib.tl_tx_arb(PH_WIDTH=10,PD_WIDTH=1...
+Compiling module xil_defaultlib.tl_rx_parser
+Compiling module xil_defaultlib.tl_cpl_engine
+Compiling module xil_defaultlib.tl_top
+Compiling module xil_defaultlib.top
+Built simulation snapshot tb_snapshot

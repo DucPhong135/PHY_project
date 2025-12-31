@@ -30,12 +30,12 @@ class tl_dll_sequencer extends uvm_sequencer#(tl_tlp_seq_item);
 
     task put_request(input tl_tlp_seq_item req);
         request_mb.put(req);
-        `uvm_info("DLL_SEQR", $sformatf("Request put into mailbox: %p", req), UVM_HIGH);
+        `uvm_info("DLL_SEQR", $sformatf("Request put into mailbox"), UVM_HIGH);
     endtask
 
     task get_request(output tl_tlp_seq_item req);
         request_mb.get(req);
-        `uvm_info("DLL_SEQR", $sformatf("Request retrieved from mailbox: %p", req), UVM_HIGH);
+        `uvm_info("DLL_SEQR", $sformatf("Request retrieved from mailbox"), UVM_HIGH);
     endtask
 
         function bit try_get_request(output tl_tlp_seq_item req);

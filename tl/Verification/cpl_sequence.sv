@@ -45,7 +45,7 @@ class cpl_sequence extends uvm_sequence#(tl_tlp_seq_item);
     `uvm_info(get_type_name(), 
           $sformatf("Reactive completion sequence started:\n  batch_size=%0d\n  shuffle_mode=%s\n  timeout=%0d cycles", 
                    batch_size, shuffle_mode.name(), batch_timeout_cycles), 
-          UVM_LOW)
+          UVM_HIGH)
     
     forever begin
       
@@ -66,7 +66,7 @@ class cpl_sequence extends uvm_sequence#(tl_tlp_seq_item);
                 $sformatf("Batch collected: %0d requests %s", 
                          request_batch.size(),
                          (request_batch.size() < batch_size) ? "(partial - timeout)" : "(full)"), 
-                UVM_MEDIUM)
+                UVM_HIGH)
       
 
       reorder_batch(request_batch);
@@ -81,8 +81,9 @@ class cpl_sequence extends uvm_sequence#(tl_tlp_seq_item);
         
         completion = build_completion(request);
         `uvm_info(get_type_name(), 
-                  $sformatf("Built completion for request tag=%0d: ",completion.tag), UVM_LOW)
-        completion.print();
+                  $sformatf("Built completion for request tag=%0d: ",completion.tag), UVM_HIGH)
+        if(uvm_report_enabled(UVM_HIGH, UVM_INFO, "CPL_SEQUENCE"))
+          completion.print();
         // Build and send completion
         start_item(completion);
         finish_item(completion);
@@ -96,7 +97,7 @@ class cpl_sequence extends uvm_sequence#(tl_tlp_seq_item);
       
       `uvm_info(get_type_name(), 
                 $sformatf("Batch complete: sent %0d completions", request_batch.size()), 
-                UVM_LOW)
+                UVM_HIGH)
     end
   endtask
 
@@ -114,7 +115,7 @@ class cpl_sequence extends uvm_sequence#(tl_tlp_seq_item);
           `uvm_info(get_type_name(), 
                     $sformatf("Collected [%0d/%0d]: tag=%0d, addr=0x%h", 
                              batch.size(), batch_size, req.tag, req.address), 
-                    UVM_LOW)
+                    UVM_HIGH)
           @(posedge sqr.vif.clk);
         end
       end

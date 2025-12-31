@@ -29,8 +29,9 @@ class rx_scoreboard extends uvm_scoreboard;
 
   function void write_tx_dll(tl_tlp_seq_item tx_tlp);
     tl_tlp_seq_item actual_tlp;
-    `uvm_info("RX_SCOREBOARD", $sformatf("Received TX TLP in RX Scoreboard:"), UVM_LOW);
-    tx_tlp.print();
+    `uvm_info("RX_SCOREBOARD", $sformatf("Received TX TLP in RX Scoreboard:"), UVM_HIGH);
+    if(uvm_report_enabled(UVM_HIGH, UVM_INFO, "RX_SCOREBOARD"))
+        tx_tlp.print();
     $cast(actual_tlp, tx_tlp.clone());
     if(tx_tlp.pkt_type == 5'b01010) begin
         actual_tx_tlp_read_queue.push_back(actual_tlp);
@@ -46,8 +47,9 @@ class rx_scoreboard extends uvm_scoreboard;
 
   function void write_mem(mem_sequence_item mem_tlp);
     mem_sequence_item expected_mem;
-    `uvm_info("RX_SCOREBOARD", $sformatf("Received Memory TLP in RX Scoreboard:"), UVM_LOW);
-    mem_tlp.print();
+    `uvm_info("RX_SCOREBOARD", $sformatf("Received Memory TLP in RX Scoreboard:"), UVM_HIGH);
+    if(uvm_report_enabled(UVM_HIGH, UVM_INFO, "RX_SCOREBOARD"))
+        mem_tlp.print();
     $cast(expected_mem, mem_tlp.clone());
     if(!mem_tlp.is_write) begin
         expected_mem_read_queue.push_back(expected_mem);
@@ -64,8 +66,9 @@ class rx_scoreboard extends uvm_scoreboard;
     tl_tlp_seq_item expected_tlp;
     mem_sequence_item expected_mem;
     $cast(expected_tlp, rx_tlp.clone());
-    `uvm_info("RX_SCOREBOARD", $sformatf("Received RX TLP in RX Scoreboard:"), UVM_LOW);
-    rx_tlp.print();
+    `uvm_info("RX_SCOREBOARD", $sformatf("Received RX TLP in RX Scoreboard:"), UVM_HIGH);
+    if(uvm_report_enabled(UVM_HIGH, UVM_INFO, "RX_SCOREBOARD"))
+        rx_tlp.print();
     if(rx_tlp.pkt_type == 5'b00000 && (rx_tlp.fmt == 3'b001 || rx_tlp.fmt == 3'b000)) begin
         expected_rx_tlp_read_queue.push_back(expected_tlp);
     end else if(rx_tlp.pkt_type == 5'b00000 && (rx_tlp.fmt == 3'b011 || rx_tlp.fmt == 3'b010)) begin
@@ -196,7 +199,7 @@ class rx_scoreboard extends uvm_scoreboard;
         
         `uvm_info("RX_SCOREBOARD", 
                 $sformatf("Write TLP Match Successful! addr=0x%h len=%0d", 
-                        tx_tlp.address, tx_tlp.length), UVM_MEDIUM)
+                        tx_tlp.address, tx_tlp.length), UVM_HIGH)
         match_write_count++;
     endfunction : compare_write_dll
 
@@ -346,7 +349,7 @@ class rx_scoreboard extends uvm_scoreboard;
         end
     end
     
-    `uvm_info("RX_SCOREBOARD", "Read TLP Match Successful!", UVM_LOW)
+    `uvm_info("RX_SCOREBOARD", "Read TLP Match Successful!", UVM_HIGH)
     match_read_count++;
   endfunction : compare_read_dll
 

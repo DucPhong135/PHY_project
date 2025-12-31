@@ -1,0 +1,4 @@
+  CREATE_STREAM @0 {NAME:tx_seq T:Transactions SCOPE:uvm_test_top.cpl_tb.user_env.user_agent.user_sequencer STREAM:1007}
+  CREATE_STREAM @0 {NAME:cpl_sequence T:Transactions SCOPE:uvm_test_top.cpl_tb.dll_env.dll_agent.dll_sequencer STREAM:1010}
+  CREATE_STREAM @0 {NAME:tx_seq T:Transactions SCOPE:uvm_test_top.cpl_tb.user_env.user_agent.user_sequencer STREAM:1007}
+  CREATE_STREAM @0 {NAME:cpl_sequence T:Transactions SCOPE:uvm_test_top.cpl_tb.dll_env.dll_agent.dll_sequencer STREAM:1010}

@@ -126,6 +126,7 @@ module tl_top #(
 
   logic [TAG_W-1:0]     free_tag;
   logic                 free_valid;
+  logic                 free_ready;
 
   // -----------------------------------------------------------------
   // Internal Wires - Payload Mux to FIFOs
@@ -240,7 +241,8 @@ module tl_top #(
     .cpl_function_number_o(lookup_function_number),
     // Free interface (from completion engine)
     .free_tag_i       (free_tag),
-    .free_valid_i     (free_valid)
+    .free_valid_i     (free_valid),
+    .free_ready_o     (free_ready)
   );
 
   // Header Generator - Creates TLP headers from user commands
@@ -608,6 +610,7 @@ module tl_top #(
     // Tag table free
     .free_tag_o       (free_tag),
     .free_valid_o     (free_valid),
+    .free_ready_i     (free_ready),
     
     // User read data output
     .usr_read_rp_addr_o (usr_read_rp_addr_o),

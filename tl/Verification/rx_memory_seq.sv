@@ -19,8 +19,8 @@ class rx_memory_seq extends uvm_sequence #(tl_tlp_seq_item);
             default_addr[1:0] == 2'b00;  
             default_addr < 32'h1000_0000;
         });
-        `uvm_info("RX_MEM_SEQ", $sformatf("Default Address for RX Memory Seq: 0x%0h", default_addr), UVM_LOW);
-        `uvm_info("RX_MEM_SEQ", "Start testing for 4DW request type", UVM_LOW);
+        `uvm_info("RX_MEM_SEQ", $sformatf("Default Address for RX Memory Seq: 0x%0h", default_addr), UVM_MEDIUM);
+        `uvm_info("RX_MEM_SEQ", "Start testing for 4DW request type", UVM_MEDIUM);
         repeat (num_transactions) begin
             `uvm_do_with(req, {
                 fmt == 3'b011;
@@ -182,14 +182,14 @@ class rx_memory_seq extends uvm_sequence #(tl_tlp_seq_item);
             offset += 64;
         end
 
-        `uvm_info("RX_MEM_SEQ", "Start testing for 3DW request type", UVM_LOW);
+        `uvm_info("RX_MEM_SEQ", "Start testing for 3DW request type", UVM_MEDIUM);
         void '(std::randomize(default_addr) with {
             default_addr[1:0] == 2'b00;
             default_addr > 32'h1000_0000;
             default_addr < 32'h2000_0000;
         });
 
-        `uvm_info("RX_MEM_SEQ", $sformatf("Default Address for RX Memory Seq: 0x%0h", default_addr), UVM_LOW);
+        `uvm_info("RX_MEM_SEQ", $sformatf("Default Address for RX Memory Seq: 0x%0h", default_addr), UVM_MEDIUM);
 
         repeat (num_transactions) begin
             `uvm_do_with(req, {

@@ -36,8 +36,10 @@ class tl_dll_driver extends uvm_driver #(tl_tlp_seq_item);
     forever begin
 
       seq_item_port.get_next_item(txn);
-      `uvm_info("DLL_DRV", "Received new TLP transaction from sequencer", UVM_LOW);
-      txn.print();
+      `uvm_info("DLL_DRV", "Received new TLP transaction from sequencer", UVM_HIGH);
+      if (uvm_report_enabled(UVM_HIGH, UVM_INFO, "DLL_DRV")) begin
+            txn.print();
+      end
 
  
       txn.build_tlp_beats(txn, beats);

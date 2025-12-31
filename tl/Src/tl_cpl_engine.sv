@@ -30,6 +30,7 @@ import tl_pkg::*;
   // Tag Table free interface
   output logic [TAG_W-1:0]       free_tag_o,
   output logic                   free_valid_o,
+  input  logic                   free_ready_i,
 
   // Returned data to user application
   output logic [63:0]            usr_read_rp_addr_o,       
@@ -102,9 +103,14 @@ import tl_pkg::*;
   logic [31:0] current_dw;
 
 
+
   logic is_cfg_req;
   assign is_cfg_req = (lookup_pkt_type_reg == 5'b00100);
 
+  logic is_cfg_rd_cpl;
+  assign is_cfg_rd_cpl = is_cfg_req && (lookup_fmt_reg == 3'b000);
+  logic is_cfg_wr_cpl;
+  assign is_cfg_wr_cpl = is_cfg_req && (lookup_fmt_reg == 3'b010);
 
   logic [9:0] remaining_dw;
   assign remaining_dw = total_dw - dw_count;
@@ -335,10 +341,6 @@ always_ff @(posedge clk or negedge rst_n) begin
 
 
 
-  logic is_cfg_rd_cpl;
-  assign is_cfg_rd_cpl = is_cfg_req && (lookup_fmt_reg == 3'b000);
-  logic is_cfg_wr_cpl;
-  assign is_cfg_wr_cpl = is_cfg_req && (lookup_fmt_reg == 3'b010);
 
   assign cfg_rd_tag_o    = cpl_reg.tag;
   assign cfg_rd_data_o   = cpl_reg.data[31:0];
@@ -357,7 +359,7 @@ always_ff @(posedge clk or negedge rst_n) begin
 
 
   assign free_tag_o   = cpl_reg.tag;
-  assign free_valid_o = ((state == SEND_READ_DATA) && last_beat && usr_rvalid_o && usr_rready_i) ||
+  assign free_valid_o = (((state == SEND_READ_DATA) && last_beat && usr_rvalid_o && usr_rready_i) ||
                         ((state == CFG_CPL) && cfg_rd_valid_o && cfg_rd_ready_i) ||
-                        ((state == CFG_CPL) && cfg_wr_valid_o && cfg_wr_ready_i);
+                        ((state == CFG_CPL) && cfg_wr_valid_o && cfg_wr_ready_i)) && free_ready_i;
 endmodule

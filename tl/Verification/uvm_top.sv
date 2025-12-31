@@ -113,23 +113,24 @@ module top ();
   );
 
     initial begin
-        // uvm_config_db#(virtual tl_user_if)::set(null, "uvm_test_top.tx_tb.user_env.user_agent.*", "user_vif", user_if);
-        // uvm_config_db#(virtual tl_dll_if)::set(null, "uvm_test_top.tx_tb.dll_env.dll_agent.*", "dll_vif", dll_if);
-        // run_test("tl_tx_test");
+        uvm_config_db#(virtual tl_user_if)::set(null, "uvm_test_top.tx_tb.user_env.user_agent.*", "user_vif", user_if);
+        uvm_config_db#(virtual tl_dll_if)::set(null, "uvm_test_top.tx_tb.dll_env.dll_agent.*", "dll_vif", dll_if);
+        uvm_config_db#(virtual mem_if)::set(null, "uvm_test_top.tx_tb.memory_env.*", "mem_vif", mem_if);
 
 
-        // uvm_config_db#(virtual tl_user_if)::set(null, "uvm_test_top.rx_tb.user_env.user_agent.*", "user_vif", user_if);
-        // uvm_config_db#(virtual tl_dll_if)::set(null, "uvm_test_top.rx_tb.dll_env.dll_agent.*", "dll_vif", dll_if);
-        // uvm_config_db#(virtual mem_if)::set(null, "uvm_test_top.rx_tb.memory_env.agent.*", "mem_vif", mem_if);
-        // uvm_config_db#(virtual mem_if)::set(null, "uvm_test_top.rx_tb.memory_env.*", "mem_vif", mem_if);
-        // run_test("tl_rx_test");
+        uvm_config_db#(virtual tl_user_if)::set(null, "uvm_test_top.rx_tb.user_env.user_agent.*", "user_vif", user_if);
+        uvm_config_db#(virtual tl_dll_if)::set(null, "uvm_test_top.rx_tb.dll_env.dll_agent.*", "dll_vif", dll_if);
+        uvm_config_db#(virtual mem_if)::set(null, "uvm_test_top.rx_tb.memory_env.agent.*", "mem_vif", mem_if);
+        uvm_config_db#(virtual mem_if)::set(null, "uvm_test_top.rx_tb.memory_env.*", "mem_vif", mem_if);
 
         uvm_config_db#(virtual tl_user_if)::set(null, "uvm_test_top.cpl_tb.user_env.user_agent.*", "user_vif", user_if);
         uvm_config_db#(virtual tl_dll_if)::set(null, "uvm_test_top.cpl_tb.dll_env.dll_agent.*", "dll_vif", dll_if);
         uvm_config_db#(virtual mem_if)::set(null, "uvm_test_top.cpl_tb.memory_env.agent.*", "mem_vif", mem_if);
         uvm_config_db#(virtual mem_if)::set(null, "uvm_test_top.cpl_tb.memory_env.*", "mem_vif", mem_if);
 
-        run_test("tl_cpl_test");
+        // run_test("tl_rx_test");
+        //run_test("tl_cpl_test");
+        run_test("tl_tx_test");
     end
 
 endmodule: top

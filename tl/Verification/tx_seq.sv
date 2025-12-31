@@ -25,7 +25,7 @@ class tx_seq extends uvm_sequence #(tl_user_seq_item);
 
   virtual task pre_body();
       if (!uvm_config_db#(bit)::get(null, get_full_name(), "monitor_cpl", monitor_cpl)) begin
-      `uvm_info("TX_SEQ", "monitor_cpl not set, using default value", UVM_MEDIUM)
+      `uvm_info("TX_SEQ", "monitor_cpl not set, using default value", UVM_LOW)
     end
 
     `uvm_info("TX_SEQ", $sformatf("Starting sequence with %0d transactions, monitor_cpl=%0d", 

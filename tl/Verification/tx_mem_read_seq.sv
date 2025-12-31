@@ -22,7 +22,7 @@ class tx_mem_read_seq extends uvm_sequence #(tl_user_seq_item);
         addr[1:0] == 2'b00;
       });
       `uvm_info("TX_SEQ", $sformatf("Sent packet: Addr=0x%0h, Write = %0b, Len=%0d DW, Data[0]=0x%0h",
-                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_LOW)
+                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_HIGH)
     end
 
     repeat (num_transactions) begin
@@ -33,7 +33,7 @@ class tx_mem_read_seq extends uvm_sequence #(tl_user_seq_item);
         addr[1:0] != 2'b00;  // Misaligned address
       });
       `uvm_info("TX_SEQ", $sformatf("Sent packet: Addr=0x%0h, Write = %0b, Len=%0d DW, Data[0]=0x%0h",
-                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_LOW)
+                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_HIGH)
     end
 
     repeat (num_transactions) begin
@@ -45,7 +45,7 @@ class tx_mem_read_seq extends uvm_sequence #(tl_user_seq_item);
         addr[63:32] == 32'h0000_0000; // Low address space
       });
       `uvm_info("TX_SEQ", $sformatf("Sent packet: Addr=0x%0h, Write = %0b, Len=%0d DW, Data[0]=0x%0h",
-                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_LOW)
+                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_HIGH)
     end
 
     repeat (num_transactions) begin
@@ -57,7 +57,7 @@ class tx_mem_read_seq extends uvm_sequence #(tl_user_seq_item);
         addr[63:32] == 32'h0000_0000; // Low address space
       });
       `uvm_info("TX_SEQ", $sformatf("Sent packet: Addr=0x%0h, Write = %0b, Len=%0d DW, Data[0]=0x%0h",
-                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_LOW)
+                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_HIGH)
     end
 
     repeat (num_transactions) begin
@@ -69,7 +69,7 @@ class tx_mem_read_seq extends uvm_sequence #(tl_user_seq_item);
         addr[63:32] != 32'h0000_0000; // Low address space
       });
       `uvm_info("TX_SEQ", $sformatf("Sent packet: Addr=0x%0h, Write = %0b, Len=%0d DW, Data[0]=0x%0h",
-                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_LOW)
+                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_HIGH)
     end
 
     repeat (num_transactions) begin
@@ -81,7 +81,7 @@ class tx_mem_read_seq extends uvm_sequence #(tl_user_seq_item);
         addr[63:32] != 32'h0000_0000; // Low address space
       });
       `uvm_info("TX_SEQ", $sformatf("Sent packet: Addr=0x%0h, Write = %0b, Len=%0d DW, Data[0]=0x%0h",
-                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_LOW)
+                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_HIGH)
     end
 
     repeat (num_transactions) begin
@@ -93,7 +93,7 @@ class tx_mem_read_seq extends uvm_sequence #(tl_user_seq_item);
         addr[63:32] == 32'h0000_0000; // Low address space
       });
       `uvm_info("TX_SEQ", $sformatf("Sent packet: Addr=0x%0h, Write = %0b, Len=%0d DW, Data[0]=0x%0h",
-                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_LOW)
+                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_HIGH)
     end
 
     repeat (num_transactions) begin
@@ -105,7 +105,7 @@ class tx_mem_read_seq extends uvm_sequence #(tl_user_seq_item);
         addr[63:32] == 32'h0000_0000; // Low address space
       });
       `uvm_info("TX_SEQ", $sformatf("Sent packet: Addr=0x%0h, Write = %0b, Len=%0d DW, Data[0]=0x%0h",
-                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_LOW)
+                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_HIGH)
     end
 
     repeat (num_transactions) begin
@@ -117,7 +117,7 @@ class tx_mem_read_seq extends uvm_sequence #(tl_user_seq_item);
         addr[63:32] != 32'h0000_0000; // High address space
       });
       `uvm_info("TX_SEQ", $sformatf("Sent packet: Addr=0x%0h, Write = %0b, Len=%0d DW, Data[0]=0x%0h",
-                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_LOW)
+                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_HIGH)
     end
 
     repeat (num_transactions) begin
@@ -129,7 +129,7 @@ class tx_mem_read_seq extends uvm_sequence #(tl_user_seq_item);
         addr[63:32] != 32'h0000_0000; // High address space
       });
       `uvm_info("TX_SEQ", $sformatf("Sent packet: Addr=0x%0h, Write = %0b, Len=%0d DW, Data[0]=0x%0h",
-                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_LOW)
+                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_HIGH)
     end
 
     repeat (num_transactions) begin
@@ -141,7 +141,7 @@ class tx_mem_read_seq extends uvm_sequence #(tl_user_seq_item);
         addr[63:32] == 32'h0000_0000; // Low address space
       });
       `uvm_info("TX_SEQ", $sformatf("Sent packet: Addr=0x%0h, Write = %0b, Len=%0d DW, Data[0]=0x%0h",
-                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_LOW)
+                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_HIGH)
     end
 
     repeat (num_transactions) begin
@@ -153,7 +153,7 @@ class tx_mem_read_seq extends uvm_sequence #(tl_user_seq_item);
         addr[63:32] == 32'h0000_0000; // Low address space
       });
       `uvm_info("TX_SEQ", $sformatf("Sent packet: Addr=0x%0h, Write = %0b, Len=%0d DW, Data[0]=0x%0h",
-                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_LOW)
+                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_HIGH)
     end
 
     repeat (num_transactions) begin
@@ -165,7 +165,7 @@ class tx_mem_read_seq extends uvm_sequence #(tl_user_seq_item);
         addr[63:32] != 32'h0000_0000; // High address space
       });
       `uvm_info("TX_SEQ", $sformatf("Sent packet: Addr=0x%0h, Write = %0b, Len=%0d DW, Data[0]=0x%0h",
-                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_LOW)
+                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_HIGH)
     end
 
     repeat (num_transactions) begin
@@ -177,7 +177,7 @@ class tx_mem_read_seq extends uvm_sequence #(tl_user_seq_item);
         addr[63:32] == 32'h0000_0000; // Low address space
       });
       `uvm_info("TX_SEQ", $sformatf("Sent packet: Addr=0x%0h, Write = %0b, Len=%0d DW, Data[0]=0x%0h",
-                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_LOW)
+                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_HIGH)
     end
 
     repeat (num_transactions) begin
@@ -189,7 +189,7 @@ class tx_mem_read_seq extends uvm_sequence #(tl_user_seq_item);
         addr[63:32] == 32'h0000_0000; // Low address space
       });
       `uvm_info("TX_SEQ", $sformatf("Sent packet: Addr=0x%0h, Write = %0b, Len=%0d DW, Data[0]=0x%0h",
-                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_LOW)
+                req.addr, req.is_write, req.length_dw, req.data_payload[0]), UVM_HIGH)
     end
   endtask : body
 endclass : tx_mem_read_seq

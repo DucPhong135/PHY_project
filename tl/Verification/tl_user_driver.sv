@@ -22,7 +22,7 @@ class tl_user_driver extends uvm_driver #(tl_user_seq_item);
     vif.init_signals();
     
     vif.wait_for_reset();
-    `uvm_info("USER_DRV", "Reset complete, starting driver", UVM_LOW);
+    `uvm_info("USER_DRV", "Reset complete, starting driver", UVM_MEDIUM);
     forever begin
       seq_item_port.get_next_item(req);
        
@@ -46,15 +46,15 @@ class tl_user_driver extends uvm_driver #(tl_user_seq_item);
     if (item.is_write && item.trans_type == CMD_MEM) begin
       // Convert payload to hardware beats
       convert_to_beats(item, beat_queue);
-      `uvm_info("USER_DRV", $sformatf("Converted %0d data beats for write", beat_queue.size()), UVM_LOW);
+      `uvm_info("USER_DRV", $sformatf("Converted %0d data beats for write", beat_queue.size()), UVM_HIGH);
       foreach (beat_queue[i]) begin
-        `uvm_info("USER_DRV", $sformatf("  Beat %0d: 0x%0h", i, beat_queue[i]), UVM_LOW);
+        `uvm_info("USER_DRV", $sformatf("  Beat %0d: 0x%0h", i, beat_queue[i]), UVM_HIGH);
       end
       vif.send_write_beats(beat_queue);
     end
     
     `uvm_info("USER_DRV", $sformatf("Sent %s: Addr=0x%0h, Len=%0d DW", 
-              item.trans_type.name(), item.addr, item.length_dw), UVM_MEDIUM)
+              item.trans_type.name(), item.addr, item.length_dw), UVM_HIGH)
   endtask
   
   //------------------------------------------------------------------

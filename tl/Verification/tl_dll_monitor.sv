@@ -81,14 +81,16 @@ class tl_dll_monitor extends uvm_monitor;
         if (vif.tl_tx_o.eop && tlp != null) begin
 
           pkt_received_count++;
-          `uvm_info("TX_DLL_MON", $sformatf("TX Pkt#: %0d", pkt_received_count), UVM_LOW);
-          tlp.print();
+          `uvm_info("TX_DLL_MON", $sformatf("TX Pkt#: %0d", pkt_received_count), UVM_HIGH);
+          if (uvm_report_enabled(UVM_HIGH, UVM_INFO, "TX_DLL_MON")) begin
+            tlp.print();
+          end
 
           tx_monitor_ap.write(tlp);
 
           if(monitor_cpl) begin
             if(tlp.need_cpl()) begin
-              `uvm_info("TX_DLL_MON", $sformatf("Send request for completion: pkt_type = %0d, fmt = %0d", tlp.pkt_type, tlp.fmt), UVM_LOW);
+              `uvm_info("TX_DLL_MON", $sformatf("Send request for completion: pkt_type = %0d, fmt = %0d", tlp.pkt_type, tlp.fmt), UVM_HIGH);
               $cast(req_copy, tlp.clone());
               reactive_sqr.put_request(req_copy);
             end
@@ -117,8 +119,11 @@ class tl_dll_monitor extends uvm_monitor;
         
         if (vif.tl_rx_i.eop && tlp != null) begin
           pkt_sent_count++;
-          `uvm_info("RX_DLL_MON", $sformatf("RX Pkt#: %0d", pkt_sent_count), UVM_LOW);
-          tlp.print();
+          `uvm_info("RX_DLL_MON", $sformatf("RX Pkt#: %0d", pkt_sent_count), UVM_HIGH);
+
+          if (uvm_report_enabled(UVM_HIGH, UVM_INFO, "RX_DLL_MON")) begin
+            tlp.print();
+          end
 
           rx_monitor_ap.write(tlp);
           tlp = null;

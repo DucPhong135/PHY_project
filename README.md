@@ -255,10 +255,223 @@ The verification environment uses mailbox-based communication for completion seq
     └── SerDes_project.xpr          # Vivado/simulator project
 ```
 
+## Running Simulations
+
+### Prerequisites
+
+Before running simulations, ensure you have:
+- **Xilinx Vivado** installed and in your system PATH
+- **Vivado Xsim simulator** available
+- **UVM library** installed with Vivado (included by default)
+- TCL interpreter (included with Vivado)
+
+### Command-Line Simulation with TCL Script
+
+The project includes `run_sim.tcl` for automated command-line simulation without opening the Vivado GUI.
+
+#### Basic Usage
+
+```bash
+vivado -mode batch -source run_sim.tcl
+```
+
+Or using Vivado's TCL shell:
+
+```bash
+vivado -mode tcl -source run_sim.tcl
+```
+
+#### Configuration Options
+
+Edit the `run_sim.tcl` file to configure the simulation before running:
+
+```tcl
+set TEST_NAME "tl_cpl_test"  ;# Options: tl_tx_test, tl_rx_test, tl_cpl_test
+set UVM_VERBOSITY "UVM_LOW"  ;# Options: UVM_LOW, UVM_MEDIUM, UVM_HIGH, UVM_DEBUG
+```
+
+**Available Tests:**
+- `tl_tx_test` - Tests the transmit path (memory read/write, config read/write)
+- `tl_rx_test` - Tests the receive path (memory transaction handling)
+- `tl_cpl_test` - Tests completion generation and matching
+
+**Verbosity Levels:**
+- `UVM_LOW` - Minimal output (recommended for regression)
+- `UVM_MEDIUM` - Moderate detail
+- `UVM_HIGH` - Detailed transaction information
+- `UVM_DEBUG` - Full debug output
+
+#### What the Script Does
+
+The `run_sim.tcl` script automates the complete simulation flow:
+1. Compiles the common package (`tl_pkg.sv`)
+2. Compiles all RTL design files
+3. Compiles UVM verification files
+4. Elaborates the design
+5. Runs the specified test
+6. Generates simulation logs
+
+#### Output Location
+
+Simulation outputs are generated in the `sim_output/` directory:
+- `<TEST_NAME>_sim.log` - Simulation log file
+- Compiled libraries and elaborated snapshots
+
+#### Example: Running Different Tests
+
+```bash
+# Run TX path test
+# Edit run_sim.tcl: set TEST_NAME "tl_tx_test"
+vivado -mode batch -source run_sim.tcl
+
+# Run RX path test
+# Edit run_sim.tcl: set TEST_NAME "tl_rx_test"
+vivado -mode batch -source run_sim.tcl
+
+# Run completion test with high verbosity
+# Edit run_sim.tcl: set TEST_NAME "tl_cpl_test"
+#                   set UVM_VERBOSITY "UVM_HIGH"
+vivado -mode batch -source run_sim.tcl
+```
 
 ### Simulation Results
 
-Test results and coverage reports will be generated in the simulation output directory. Scoreboards provide automatic pass/fail indication for each test scenario.
+Test results will be generated in the simulation output directory. Scoreboards provide automatic pass/fail indication for each test scenario.
+
+## Running Synthesis
+
+### Prerequisites
+
+Before running synthesis, ensure you have:
+- **Xilinx Vivado** installed and in your system PATH
+- Appropriate FPGA part license (if targeting specific device)
+- TCL interpreter (included with Vivado)
+
+### Command-Line Synthesis with TCL Script
+
+The project includes `run_synth.tcl` for automated command-line synthesis without opening the Vivado GUI.
+
+#### Basic Usage
+
+```bash
+vivado -mode batch -source run_synth.tcl
+```
+
+Or using Vivado's TCL shell:
+
+```bash
+vivado -mode tcl -source run_synth.tcl
+```
+
+#### Configuration Options
+
+Edit the `run_synth.tcl` file to configure the synthesis flow before running:
+
+```tcl
+set RUN_IMPLEMENTATION 0   ;# Set to 1 to run implementation after synthesis
+set RUN_BITSTREAM 0        ;# Set to 1 to generate bitstream (requires implementation)
+set NUM_JOBS 8             ;# Number of parallel jobs for synthesis/implementation
+set TARGET_PART "xc7k325tffg900-2"  ;# Target FPGA part number
+```
+
+**Configuration Parameters:**
+- `RUN_IMPLEMENTATION` - Set to `1` to automatically run implementation (place & route) after synthesis
+- `RUN_BITSTREAM` - Set to `1` to generate programming bitstream (requires implementation)
+- `NUM_JOBS` - Number of parallel threads for synthesis and implementation (adjust based on your CPU)
+- `TARGET_PART` - Target FPGA device part number (update for your specific hardware)
+
+#### What the Script Does
+
+The `run_synth.tcl` script automates the complete synthesis flow:
+1. Creates or opens the Vivado project (`tl_synth_project`)
+2. Adds the common package file (`common/tl_pkg.sv`)
+3. Adds all RTL design files from `tl/Src/`
+4. Sets `tl_top` as the top-level module
+5. Updates compile order
+6. Runs synthesis with multi-threading
+7. Generates comprehensive reports (timing, utilization, power)
+8. Optionally runs implementation and generates bitstream
+9. Saves design checkpoints for incremental flows
+
+#### Source Files Synthesized
+
+The script synthesizes the following files in order:
+- `common/tl_pkg.sv` - Common package definitions
+- `tl/Src/tl_fifo.sv`
+- `tl/Src/tl_credit_mgr.sv`
+- `tl/Src/tl_tag_table.sv`
+- `tl/Src/cfg_space.sv`
+- `tl/Src/tl_hdr_gen.sv`
+- `tl/Src/tl_payload_mux.sv`
+- `tl/Src/tl_tx_queue_router.sv`
+- `tl/Src/tl_tx_arb.sv`
+- `tl/Src/tl_cpl_gen.sv`
+- `tl/Src/tl_cpl_engine.sv`
+- `tl/Src/tl_rx_parser.sv`
+- `tl/Src/tl_top.sv` (top module)
+
+#### Output Directories and Files
+
+Synthesis outputs are organized in the following directories:
+
+```
+.
+├── tl_synth_project/           # Vivado project directory
+│   ├── tl_synth_project.xpr   # Vivado project file
+│   └── ...                    # Project database and cache files
+│
+├── synth_reports/             # Synthesis reports
+│   ├── synthesis/            # Post-synthesis reports
+│   │   ├── timing_summary.rpt    # Timing analysis
+│   │   ├── utilization.rpt       # Resource utilization
+│   │   └── power.rpt             # Power estimation
+│   └── implementation/       # Post-implementation reports (if enabled)
+│       ├── timing_summary.rpt
+│       ├── utilization.rpt
+│       ├── power.rpt
+│       ├── clock_interaction.rpt
+│       └── drc.rpt              # Design Rule Check results
+│
+├── checkpoints/              # Design checkpoints
+│   ├── post_synth.dcp       # Post-synthesis checkpoint
+│   └── post_route.dcp       # Post-route checkpoint (if implementation enabled)
+│
+└── design.bit               # Programming bitstream (if bitstream generation enabled)
+```
+
+**Key Output Files:**
+- **Timing Reports** - Shows timing paths, slack, and whether timing constraints are met
+- **Utilization Reports** - Details resource usage (LUTs, FFs, BRAMs, DSPs)
+- **Power Reports** - Estimates power consumption
+- **Design Checkpoints (.dcp)** - Allows resuming synthesis/implementation from saved state
+- **Bitstream (.bit)** - Programming file for FPGA configuration
+
+#### Example: Running Synthesis Only
+
+```bash
+# Ensure configuration in run_synth.tcl:
+# set RUN_IMPLEMENTATION 0
+# set RUN_BITSTREAM 0
+vivado -mode batch -source run_synth.tcl
+```
+
+#### Example: Running Complete Flow (Synthesis + Implementation + Bitstream)
+
+```bash
+# Edit run_synth.tcl:
+# set RUN_IMPLEMENTATION 1
+# set RUN_BITSTREAM 1
+vivado -mode batch -source run_synth.tcl
+```
+
+### Synthesis Results
+
+After synthesis completes:
+- Check `synth_reports/synthesis/timing_summary.rpt` for timing analysis
+- Review `synth_reports/synthesis/utilization.rpt` for resource usage
+- If implementation was run, check WNS (Worst Negative Slack) in the console output:
+  - WNS ≥ 0: Timing constraints met ✓
+  - WNS < 0: Timing constraints not met (requires optimization)
 
 ## Design Constraints
 

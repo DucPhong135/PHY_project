@@ -1,0 +1,1 @@
+-debug "typical" -timescale "1ns/1ps" -top "xil_defaultlib.top" -snapshot "tb_snapshot" -L "uvm" 

@@ -32,7 +32,7 @@ class tx_scoreboard extends uvm_scoreboard;
   function void write_user(tl_user_seq_item user);
     tl_user_seq_item expected;
     $cast(expected, user.clone());
-    `uvm_info("TX_SCOREBOARD", $sformatf("Received User: %s", expected.sprint()), UVM_LOW)
+    `uvm_info("TX_SCOREBOARD", $sformatf("Received User: %s", expected.sprint()), UVM_HIGH)
     expected_user.push_back(expected);
   endfunction
 
@@ -44,7 +44,7 @@ class tx_scoreboard extends uvm_scoreboard;
         return;
     end
     $cast(actual, tlp.clone());
-    `uvm_info("TX_SCOREBOARD", $sformatf("Received dll: %s", actual.sprint()), UVM_LOW)
+    `uvm_info("TX_SCOREBOARD", $sformatf("Received dll: %s", actual.sprint()), UVM_HIGH)
     if (expected_user.size() == 0) begin
         `uvm_error("TX_SCOREBOARD", $sformatf(
         "No expected user transaction to match against TLP (Tag=0x%02h)",
@@ -64,7 +64,7 @@ class tx_scoreboard extends uvm_scoreboard;
                 actual.get_type_str(),
                 actual.address,
                 actual.length,
-                actual.tag), UVM_LOW)
+                actual.tag), UVM_HIGH)
         end
         else begin
             `uvm_info("TX_SCOREBOARD", $sformatf(
@@ -82,7 +82,7 @@ class tx_scoreboard extends uvm_scoreboard;
                 actual.function_number,
                 actual.register_number,
                 actual.config_data,
-                actual.tag), UVM_LOW)
+                actual.tag), UVM_HIGH)
         end
         num_matches++;
     end

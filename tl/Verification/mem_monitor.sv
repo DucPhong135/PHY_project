@@ -54,12 +54,12 @@ class mem_monitor extends uvm_monitor;
         end
 
         `uvm_info("MEM_MON", $sformatf("RD: Addr=0x%0h, Len=%0d, Beats=%0d",
-                  txn.addr, txn.length, txn.data_queue.size()), UVM_MEDIUM)
+                  txn.addr, txn.length, txn.data_queue.size()), UVM_HIGH)
         
         mem_ap.write(txn);
       end
       else if(vif.memwr_req_valid && vif.memwr_req_ready) begin
-        `uvm_info("MEM_MON", "Detected memory write request", UVM_LOW)
+        `uvm_info("MEM_MON", "Detected memory write request", UVM_HIGH)
         txn = mem_sequence_item::type_id::create("txn");
         txn.is_write = 1'b1;
         txn.addr = vif.memwr_req.addr;
@@ -73,7 +73,7 @@ class mem_monitor extends uvm_monitor;
           while (!(vif.memwr_data_valid && vif.memwr_data_ready))
             @(posedge vif.clk);
           txn.data_queue.push_back(vif.memwr_data);
-          `uvm_info("MEM_MON", $sformatf("Captured write data beat %0d: 0x%0h", i, vif.memwr_data), UVM_LOW)
+          `uvm_info("MEM_MON", $sformatf("Captured write data beat %0d: 0x%0h", i, vif.memwr_data), UVM_HIGH)
         end
         
         for (int i = 0; i < total_beats; i++) begin
@@ -84,7 +84,7 @@ class mem_monitor extends uvm_monitor;
           txn.payload_data.push_back(data_beat[127:96]);
         end
         `uvm_info("MEM_MON", $sformatf("WR: Addr=0x%0h, Len=%0d, Beats=%0d",
-                  txn.addr, txn.length, txn.data_queue.size()), UVM_LOW )
+                  txn.addr, txn.length, txn.data_queue.size()), UVM_HIGH)
         
         mem_ap.write(txn);
       end

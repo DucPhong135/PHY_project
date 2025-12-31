@@ -81,7 +81,7 @@ class tl_memory_model extends uvm_component;
         
         `uvm_info(get_type_name(),
                   $sformatf("RD_REQ: Addr=0x%0h, Len=%0d DWs, Beats=%0d",
-                           rd_addr, rd_length, total_beats), UVM_MEDIUM)
+                           rd_addr, rd_length, total_beats), UVM_HIGH)
         
         // Stop accepting new requests
         vif.memrd_req_ready = 1'b0;
@@ -147,7 +147,7 @@ class tl_memory_model extends uvm_component;
         
         `uvm_info(get_type_name(), 
                   $sformatf("WR_REQ: Addr=0x%0h, Len=%0d DWs, Beats=%0d", 
-                           wr_addr, wr_length, total_beats), UVM_MEDIUM)
+                           wr_addr, wr_length, total_beats), UVM_HIGH)
         
         vif.memwr_req_ready = 1'b0;
         vif.memrd_req_ready = 1'b0;
@@ -182,11 +182,11 @@ class tl_memory_model extends uvm_component;
         end
         
         vif.memwr_data_ready = 1'b0;
-        `uvm_info(get_type_name(), "print wr_txn", UVM_MEDIUM)
+        `uvm_info(get_type_name(), "print wr_txn", UVM_HIGH)
         txn.print();
         mem_ap.write(txn);
 
-        `uvm_info(get_type_name(), "WR_COMPLETE", UVM_MEDIUM)
+        `uvm_info(get_type_name(), "WR_COMPLETE", UVM_HIGH)
       end
     end
   endtask
@@ -203,7 +203,7 @@ class tl_memory_model extends uvm_component;
     end
     `uvm_info(get_type_name(), 
               $sformatf("Preloaded %0d beats at 0x%0h", data_queue.size(), addr), 
-              UVM_LOW)
+              UVM_HIGH)
   endfunction
   
   // Dump memory for debugging

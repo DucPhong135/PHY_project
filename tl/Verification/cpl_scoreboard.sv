@@ -37,19 +37,21 @@ class cpl_scoreboard extends uvm_scoreboard;
     tl_user_seq_item item_copy;
     $cast(item_copy, item.clone());
     actual_cpls.push_back(item_copy);
-    `uvm_info("CPL_SB", $sformatf("Received actual completion from user monitor. Total actual completions: %0d", actual_cpls.size()), UVM_LOW);
+    `uvm_info("CPL_SB", $sformatf("Received actual completion from user monitor. Total actual completions: %0d", actual_cpls.size()), UVM_HIGH);
 
-    `uvm_info("CPL_SB", $sformatf("Actual CPL:"), UVM_LOW);
-    item_copy.print();
+    `uvm_info("CPL_SB", $sformatf("Actual CPL:"), UVM_HIGH);
+    if(uvm_report_enabled(UVM_HIGH, UVM_INFO, "CPL_SB"))
+      item_copy.print();
   endfunction
 
   function write_dll_cpl(tl_tlp_seq_item item);
     tl_tlp_seq_item item_copy;
     $cast(item_copy, item.clone());
     expected_cpls.push_back(item_copy);
-    `uvm_info("CPL_SB", $sformatf("Received expected completion from DLL monitor. Total expected completions: %0d", expected_cpls.size()), UVM_LOW);
-    `uvm_info("CPL_SB", $sformatf("Expected CPL:"), UVM_LOW);
-    item_copy.print();
+    `uvm_info("CPL_SB", $sformatf("Received expected completion from DLL monitor. Total expected completions: %0d", expected_cpls.size()), UVM_HIGH);
+    `uvm_info("CPL_SB", $sformatf("Expected CPL:"), UVM_HIGH);
+    if(uvm_report_enabled(UVM_HIGH, UVM_INFO, "CPL_SB"))
+      item_copy.print();
   endfunction
 
 
@@ -165,7 +167,7 @@ class cpl_scoreboard extends uvm_scoreboard;
       end
     endcase
 
-    `uvm_info("CPL_SB", "Completion match successful", UVM_LOW);
+    `uvm_info("CPL_SB", "Completion match successful", UVM_HIGH);
     num_matches++;
         return 1;
   endfunction
@@ -187,12 +189,10 @@ class cpl_scoreboard extends uvm_scoreboard;
   string report_str;
   super.report_phase(phase);
   
-  
-  `uvm_info("CPL_SB", "========================================", UVM_NONE)
-  `uvm_info("CPL_SB", "     COMPLETION SCOREBOARD REPORT      ", UVM_NONE)
-  `uvm_info("CPL_SB", "========================================", UVM_NONE)
-  
-  report_str = $sformatf("\n");
+  // Build complete report in a single string
+  report_str = "\n========================================\n";
+  report_str = {report_str, "     COMPLETION SCOREBOARD REPORT      \n"};
+  report_str = {report_str, "========================================\n\n"};
   report_str = {report_str, $sformatf("  Total Actual Completions:    %0d\n", actual_cpls.size())};
   report_str = {report_str, $sformatf("  Total Expected Completions:  %0d\n", expected_cpls.size())};
   report_str = {report_str, $sformatf("  Total Matches:               %0d\n", num_matches)};
@@ -202,123 +202,104 @@ class cpl_scoreboard extends uvm_scoreboard;
   report_str = {report_str, $sformatf("  Total Mismatches:            %0d\n", 
                 num_mem_read_mismatches + num_cfg_read_mismatches + num_cfg_write_mismatches)};
   
-  `uvm_info("CPL_SB", report_str, UVM_NONE)
-  
 
   if (num_mem_read_mismatches > 0) begin
-    `uvm_error("CPL_SB", $sformatf("\n========================================"))
-    `uvm_error("CPL_SB", $sformatf("  MEMORY READ COMPLETION MISMATCHES (%0d)", num_mem_read_mismatches))
-    `uvm_error("CPL_SB", $sformatf("========================================"))
+    report_str = {report_str, "\n========================================\n"};
+    report_str = {report_str, $sformatf("  MEMORY READ COMPLETION MISMATCHES (%0d)\n", num_mem_read_mismatches)};
+    report_str = {report_str, "========================================\n"};
     
     for (int i = 0; i < mismatched_mem_read_cpls.size(); i++) begin
-      `uvm_error("CPL_SB", $sformatf("\n--- Mismatch #%0d ---", i+1))
+      report_str = {report_str, $sformatf("\n--- Mismatch #%0d ---\n", i+1)};
       
-      `uvm_error("CPL_SB", "ACTUAL (User Monitor):")
-      `uvm_error("CPL_SB", $sformatf("  Addr:      0x%0h", mismatched_mem_read_cpls[i].addr))
-      `uvm_error("CPL_SB", $sformatf("  Length:    %0d DW", mismatched_mem_read_cpls[i].length_dw))
-      `uvm_error("CPL_SB", $sformatf("  First BE:  0x%h", mismatched_mem_read_cpls[i].first_be))
-      `uvm_error("CPL_SB", $sformatf("  Last BE:   0x%h", mismatched_mem_read_cpls[i].last_be))
-      `uvm_error("CPL_SB", $sformatf("  Status:    0x%0h", mismatched_mem_read_cpls[i].status))
+      report_str = {report_str, "ACTUAL (User Monitor):\n"};
+      report_str = {report_str, $sformatf("  Addr:      0x%0h\n", mismatched_mem_read_cpls[i].addr)};
+      report_str = {report_str, $sformatf("  Length:    %0d DW\n", mismatched_mem_read_cpls[i].length_dw)};
+      report_str = {report_str, $sformatf("  First BE:  0x%h\n", mismatched_mem_read_cpls[i].first_be)};
+      report_str = {report_str, $sformatf("  Last BE:   0x%h\n", mismatched_mem_read_cpls[i].last_be)};
+      report_str = {report_str, $sformatf("  Status:    0x%0h\n", mismatched_mem_read_cpls[i].status)};
       
-      // Print data payload
       if (mismatched_mem_read_cpls[i].data_payload.size() > 0) begin
-        `uvm_error("CPL_SB", "  Data Payload (Actual):")
+        report_str = {report_str, "  Data Payload (Actual):\n"};
         for (int dw = 0; dw < mismatched_mem_read_cpls[i].data_payload.size(); dw++) begin
-          `uvm_error("CPL_SB", $sformatf("    [%0d]: 0x%08h", dw, mismatched_mem_read_cpls[i].data_payload[dw]))
+          report_str = {report_str, $sformatf("    [%0d]: 0x%08h\n", dw, mismatched_mem_read_cpls[i].data_payload[dw])};
         end
       end
       
-      `uvm_error("CPL_SB", "EXPECTED (DLL Monitor):")
-      `uvm_error("CPL_SB", $sformatf("  Addr:      0x%0h", mismatched_mem_read_dll_cpls[i].address))
-      `uvm_error("CPL_SB", $sformatf("  Length:    %0d DW", mismatched_mem_read_dll_cpls[i].length))
-      `uvm_error("CPL_SB", $sformatf("  Tag:       0x%0h", mismatched_mem_read_dll_cpls[i].tag))
-      `uvm_error("CPL_SB", $sformatf("  Status:    0x%0h", mismatched_mem_read_dll_cpls[i].status))
+      report_str = {report_str, "EXPECTED (DLL Monitor):\n"};
+      report_str = {report_str, $sformatf("  Addr:      0x%0h\n", mismatched_mem_read_dll_cpls[i].address)};
+      report_str = {report_str, $sformatf("  Length:    %0d DW\n", mismatched_mem_read_dll_cpls[i].length)};
+      report_str = {report_str, $sformatf("  Tag:       0x%0h\n", mismatched_mem_read_dll_cpls[i].tag)};
+      report_str = {report_str, $sformatf("  Status:    0x%0h\n", mismatched_mem_read_dll_cpls[i].status)};
       
-      // Print data payload
       if (mismatched_mem_read_dll_cpls[i].payload_data.size() > 0) begin
-        `uvm_error("CPL_SB", "  Data Payload (Expected):")
+        report_str = {report_str, "  Data Payload (Expected):\n"};
         for (int dw = 0; dw < mismatched_mem_read_dll_cpls[i].payload_data.size(); dw++) begin
-          `uvm_error("CPL_SB", $sformatf("    [%0d]: 0x%08h", dw, mismatched_mem_read_dll_cpls[i].payload_data[dw]))
+          report_str = {report_str, $sformatf("    [%0d]: 0x%08h\n", dw, mismatched_mem_read_dll_cpls[i].payload_data[dw])};
         end
       end
-      
-      // Print full objects for detailed debug
-      `uvm_error("CPL_SB", "\nFull Actual Object:")
-      mismatched_mem_read_cpls[i].print();
-      `uvm_error("CPL_SB", "\nFull Expected Object:")
-      mismatched_mem_read_dll_cpls[i].print();
     end
   end
 
 
   if (num_cfg_read_mismatches > 0) begin
-    `uvm_error("CPL_SB", $sformatf("\n========================================"))
-    `uvm_error("CPL_SB", $sformatf("  CONFIG READ COMPLETION MISMATCHES (%0d)", num_cfg_read_mismatches))
-    `uvm_error("CPL_SB", $sformatf("========================================"))
+    report_str = {report_str, "\n========================================\n"};
+    report_str = {report_str, $sformatf("  CONFIG READ COMPLETION MISMATCHES (%0d)\n", num_cfg_read_mismatches)};
+    report_str = {report_str, "========================================\n"};
     
     for (int i = 0; i < mismatched_cfg_read_cpls.size(); i++) begin
-      `uvm_error("CPL_SB", $sformatf("\n--- Mismatch #%0d ---", i+1))
+      report_str = {report_str, $sformatf("\n--- Mismatch #%0d ---\n", i+1)};
       
-      `uvm_error("CPL_SB", "ACTUAL (User Monitor):")
-      `uvm_error("CPL_SB", $sformatf("  Tag:         0x%0h", mismatched_cfg_read_cpls[i].tag))
-      `uvm_error("CPL_SB", $sformatf("  Status:      0x%0h", mismatched_cfg_read_cpls[i].status))
-      `uvm_error("CPL_SB", $sformatf("  Bus/Device/Function: 0x%0h", 
-        {mismatched_cfg_read_cpls[i].bus, mismatched_cfg_read_cpls[i].device, mismatched_cfg_read_cpls[i].function_num}))
-      `uvm_error("CPL_SB", $sformatf("  Config Data: 0x%08h", mismatched_cfg_read_cpls[i].config_data))
+      report_str = {report_str, "ACTUAL (User Monitor):\n"};
+      report_str = {report_str, $sformatf("  Tag:         0x%0h\n", mismatched_cfg_read_cpls[i].tag)};
+      report_str = {report_str, $sformatf("  Status:      0x%0h\n", mismatched_cfg_read_cpls[i].status)};
+      report_str = {report_str, $sformatf("  Bus/Device/Function: 0x%0h\n", 
+        {mismatched_cfg_read_cpls[i].bus, mismatched_cfg_read_cpls[i].device, mismatched_cfg_read_cpls[i].function_num})};
+      report_str = {report_str, $sformatf("  Config Data: 0x%08h\n", mismatched_cfg_read_cpls[i].config_data)};
       
-      `uvm_error("CPL_SB", "EXPECTED (DLL Monitor):")
-      `uvm_error("CPL_SB", $sformatf("  Tag:         0x%0h", mismatched_cfg_read_dll_cpls[i].tag))
-      `uvm_error("CPL_SB", $sformatf("  Status:      0x%0h", mismatched_cfg_read_dll_cpls[i].status))
-      `uvm_error("CPL_SB", $sformatf("  Bus/Device/Function: 0x%0h", 
-        mismatched_cfg_read_dll_cpls[i].completer_id))
-      `uvm_error("CPL_SB", $sformatf("  Config Data: 0x%08h", mismatched_cfg_read_dll_cpls[i].config_data))
-      
-      // Print full objects
-      `uvm_error("CPL_SB", "\nFull Actual Object:")
-      mismatched_cfg_read_cpls[i].print();
-      `uvm_error("CPL_SB", "\nFull Expected Object:")
-      mismatched_cfg_read_dll_cpls[i].print();
+      report_str = {report_str, "EXPECTED (DLL Monitor):\n"};
+      report_str = {report_str, $sformatf("  Tag:         0x%0h\n", mismatched_cfg_read_dll_cpls[i].tag)};
+      report_str = {report_str, $sformatf("  Status:      0x%0h\n", mismatched_cfg_read_dll_cpls[i].status)};
+      report_str = {report_str, $sformatf("  Bus/Device/Function: 0x%0h\n", 
+        mismatched_cfg_read_dll_cpls[i].completer_id)};
+      report_str = {report_str, $sformatf("  Config Data: 0x%08h\n", mismatched_cfg_read_dll_cpls[i].config_data)};
     end
   end
   
 
   if (num_cfg_write_mismatches > 0) begin
-    `uvm_error("CPL_SB", $sformatf("\n========================================"))
-    `uvm_error("CPL_SB", $sformatf("  CONFIG WRITE COMPLETION MISMATCHES (%0d)", num_cfg_write_mismatches))
-    `uvm_error("CPL_SB", $sformatf("========================================"))
+    report_str = {report_str, "\n========================================\n"};
+    report_str = {report_str, $sformatf("  CONFIG WRITE COMPLETION MISMATCHES (%0d)\n", num_cfg_write_mismatches)};
+    report_str = {report_str, "========================================\n"};
     
     for (int i = 0; i < mismatched_cfg_write_cpls.size(); i++) begin
-      `uvm_error("CPL_SB", $sformatf("\n--- Mismatch #%0d ---", i+1))
+      report_str = {report_str, $sformatf("\n--- Mismatch #%0d ---\n", i+1)};
       
-      `uvm_error("CPL_SB", "ACTUAL (User Monitor):")
-      `uvm_error("CPL_SB", $sformatf("  Tag:    0x%0h", mismatched_cfg_write_cpls[i].tag))
-      `uvm_error("CPL_SB", $sformatf("  Status: 0x%0h", mismatched_cfg_write_cpls[i].status))
+      report_str = {report_str, "ACTUAL (User Monitor):\n"};
+      report_str = {report_str, $sformatf("  Tag:    0x%0h\n", mismatched_cfg_write_cpls[i].tag)};
+      report_str = {report_str, $sformatf("  Status: 0x%0h\n", mismatched_cfg_write_cpls[i].status)};
       
-      `uvm_error("CPL_SB", "EXPECTED (DLL Monitor):")
-      `uvm_error("CPL_SB", $sformatf("  Tag:    0x%0h", mismatched_cfg_write_dll_cpls[i].tag))
-      `uvm_error("CPL_SB", $sformatf("  Status: 0x%0h", mismatched_cfg_write_dll_cpls[i].status))
-      
-      // Print full objects
-      `uvm_error("CPL_SB", "\nFull Actual Object:")
-      mismatched_cfg_write_cpls[i].print();
-      `uvm_error("CPL_SB", "\nFull Expected Object:")
-      mismatched_cfg_write_dll_cpls[i].print();
+      report_str = {report_str, "EXPECTED (DLL Monitor):\n"};
+      report_str = {report_str, $sformatf("  Tag:    0x%0h\n", mismatched_cfg_write_dll_cpls[i].tag)};
+      report_str = {report_str, $sformatf("  Status: 0x%0h\n", mismatched_cfg_write_dll_cpls[i].status)};
     end
   end
   
 
-  `uvm_info("CPL_SB", "========================================", UVM_NONE)
+  report_str = {report_str, "\n========================================\n"};
   
   if (num_mem_read_mismatches == 0 && 
       num_cfg_read_mismatches == 0 && 
       num_cfg_write_mismatches == 0 &&
       actual_cpls.size() == expected_cpls.size()) begin
-    `uvm_info("CPL_SB", "  TEST PASSED - All completions matched!", UVM_NONE)
+    report_str = {report_str, "  TEST PASSED - All completions matched!\n"};
   end else begin
-    `uvm_error("CPL_SB", "  TEST FAILED - Mismatches detected!")
+    report_str = {report_str, "  TEST FAILED - Mismatches detected!\n"};
   end
   
-  `uvm_info("CPL_SB", "========================================", UVM_NONE)
+  report_str = {report_str, "========================================\n"};
+  
+  // Print entire report with single uvm_info
+  `uvm_info("CPL_SB", report_str, UVM_NONE)
   
 endfunction : report_phase
 

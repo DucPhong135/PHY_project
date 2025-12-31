@@ -247,7 +247,6 @@ always_ff @(posedge clk or negedge rst_n) begin
 end
 
 
-logic [9:0] dw_count = (cpl_cmd_reg.byte_count + 12'd3) >> 2;
 
 // Header Generation Logic
 always_ff @(posedge clk or negedge rst_n) begin

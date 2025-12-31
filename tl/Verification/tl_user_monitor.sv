@@ -135,15 +135,17 @@ endtask : collect_write_data
       vif.usr_read_rp_ready_i = 1'b1;
       if(vif.usr_read_rp_ready_i && vif.usr_read_rp_valid_o) begin
         cpl_item = tl_user_seq_item::type_id::create("mem_rd_cpl");
-        `uvm_info("TL_USER_MON", "Detected Memory Read Completion Request", UVM_LOW)
+        `uvm_info("TL_USER_MON", "Detected Memory Read Completion Request", UVM_HIGH)
         vif.usr_read_rp_ready_i = 1'b0;
         collect_mem_rd_completion(cpl_item);
         
         `uvm_info("TL_USER_MON", $sformatf(
             "Captured Memory Read Completion data:"
-        ), UVM_LOW)
+        ), UVM_HIGH)
 
-        cpl_item.print();
+        if (uvm_report_enabled(UVM_HIGH, UVM_INFO, "TL_USER_MON")) begin
+            cpl_item.print();
+        end
         cpl_ap.write(cpl_item);
       end
     end
@@ -253,9 +255,11 @@ task monitor_cfg_rd_completions();
         
         `uvm_info("TL_USER_MON", $sformatf(
           "Captured Config Read Completion:"
-        ), UVM_LOW)
+        ), UVM_HIGH)
         
-        cpl_item.print();
+        if (uvm_report_enabled(UVM_HIGH, UVM_INFO, "TL_USER_MON")) begin
+            cpl_item.print();
+        end
         cpl_ap.write(cpl_item);
         vif.cfg_rd_ready_i = 1'b0;
       end
@@ -285,9 +289,11 @@ task monitor_cfg_rd_completions();
         
         `uvm_info("TL_USER_MON", $sformatf(
           "Captured Config Write Completion:"
-        ), UVM_LOW)
+        ), UVM_HIGH)
         
-        cpl_item.print();
+        if (uvm_report_enabled(UVM_HIGH, UVM_INFO, "TL_USER_MON")) begin
+            cpl_item.print();
+        end
         cpl_ap.write(cpl_item);
         vif.cfg_wr_ready_i = 1'b0;
       end
